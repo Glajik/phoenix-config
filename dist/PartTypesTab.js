@@ -17,7 +17,7 @@ var PartTypesTab = function (_SheetWrapper) {
     return _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
       sheetName: 'Типы деталей',
       numHeaders: 1,
-      fields: ['full_path', 'class', 'type', 'sub_type', 'name']
+      fields: ['document_path', 'class', 'type', 'sub_type', 'name']
     }));
   }
 
@@ -50,6 +50,8 @@ var PartTypesTab = function (_SheetWrapper) {
       }
 
       Logger.log('Cell %s %s edited', rowId, obj.column);
+
+      service_edit(rowId);
     }
   }]);
 

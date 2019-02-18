@@ -4,7 +4,7 @@ class PartTypesTab extends SheetWrapper {
       sheetName: 'Типы деталей',
       numHeaders: 1,
       fields: [
-        'full_path',
+        'document_path',
         'class',
         'type',
         'sub_type',
@@ -37,5 +37,7 @@ class PartTypesTab extends SheetWrapper {
     }
 
     Logger.log('Cell %s %s edited', rowId, obj.column);
+
+    service_edit(rowId);
   }
 }
