@@ -1,5 +1,7 @@
 'use strict';
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 function onOpen(e) {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('Phoenix').addItem('Refresh', 'service_refresh').addToUi();
@@ -32,7 +34,18 @@ function service_refresh() {
 
   var firestore = new Firestore(email, key, projectId);
 
-  var partTypes = firestore.getDocuments('PartTypes');
+  var partTypesRaw = firestore.getDocuments('PartTypes');
 
-  Logger.log(partTypes);
+  var partTypes = partTypesRaw.map(function (_ref) {
+    var full_path = _ref.name,
+        fields = _ref.fields;
+
+    return _extends({
+      full_path: full_path
+    }, fields);
+  });
+
+  var partTypesTab = new PartTypesTab();
+
+  partTypesTab.updateSheet(partTypes);
 }

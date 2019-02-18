@@ -4,9 +4,8 @@ class PartTypesTab extends SheetWrapper {
       sheetName: 'Типы деталей',
       numHeaders: 1,
       fields: [
-        'document',
-        'uuid',
-        'orderId',
+        'full_path',
+        'class',
         'type',
         'sub_type',
         'name',

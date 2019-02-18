@@ -17,7 +17,7 @@ var PartTypesTab = function (_SheetWrapper) {
     return _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
       sheetName: 'Типы деталей',
       numHeaders: 1,
-      fields: ['document', 'uuid', 'orderId', 'type', 'sub_type', 'name']
+      fields: ['full_path', 'class', 'type', 'sub_type', 'name']
     }));
   }
 

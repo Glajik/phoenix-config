@@ -33,7 +33,16 @@ function service_refresh() {
 
   const firestore = new Firestore(email, key, projectId);
 
-  const partTypes = firestore.getDocuments('PartTypes');
+  const partTypesRaw = firestore.getDocuments('PartTypes');
 
-  Logger.log(partTypes);
+  const partTypes = partTypesRaw.map(({ name: full_path, fields }) => {
+    return {
+      full_path,
+      ...fields,
+    }
+  })
+
+  const partTypesTab = new PartTypesTab();
+
+  partTypesTab.updateSheet(partTypes);
 }
