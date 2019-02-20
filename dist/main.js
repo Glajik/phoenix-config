@@ -4,14 +4,31 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 function onOpen(e) {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('Phoenix').addItem('Обновить', 'service_refresh').addItem('Добавить', 'service_append').addItem('Удалить', 'service_delete').addToUi();
+  ui.createMenu('Phoenix').addItem('Обновить', 'serviceRead').addItem('Добавить', 'serviceCreate').addItem('Удалить', 'serviceDelete').addSeparator().addItem('Показать настройки доступа', 'serviceShowCredentials').addItem('Сброс настроек доступа', 'serviceResetCredentials').addToUi();
 }
 
 function onEditInstall(e) {
   new PartTypesTab().onEdit(e);
 }
 
-function service_refresh() {
+function serviceShowCredentials() {
+  var options = new Options();
+  var firebase_credentials = options.load('firebase_credentials');
+  var client_email = firebase_credentials.client_email,
+      project_id = firebase_credentials.project_id,
+      private_key = firebase_credentials.private_key;
+
+
+  var prompt = 'client_email: ' + client_email + '\n\n  project_id: ' + project_id + '\n\n  private_key: \n' + private_key;
+
+  SpreadsheetApp.getUi().alert(prompt);
+}
+
+function serviceResetCredentials() {
+  new Options().setup('firebase_credentials');
+}
+
+function serviceRead() {
   // TODO:
   // get this from properties service
   var credentials = {
@@ -54,7 +71,7 @@ function service_refresh() {
   Logger.log(result);
 }
 
-function service_append() {
+function serviceCreate() {
   // TODO:
   // get this from properties service
   var credentials = {
@@ -90,15 +107,20 @@ function service_append() {
 
   Logger.log(result);
 
-  service_refresh();
+  serviceRead();
   // const partTypesTab = new PartTypesTab();
 
   // partTypesTab.updateSheet(partTypes);
 }
 
+/**
+ * 
+ * @param {Number} rowId Номер строки в таблице
+ */
 function service_edit(rowId) {
   // TODO:
   // get this from properties service
+
   var credentials = {
     "type": "service_account",
     "project_id": "autocrash-y19",
@@ -148,12 +170,12 @@ function service_edit(rowId) {
 
   Logger.log(result);
 
-  // service_refresh();
+  // serviceRead();
 
   // partTypesTab.updateSheet(partTypes);
 }
 
-function service_delete() {
+function serviceDelete() {
   // TODO:
   // get this from properties service
   var credentials = {
@@ -201,7 +223,7 @@ function service_delete() {
 
   Logger.log(result);
 
-  service_refresh();
+  serviceRead();
 
   // partTypesTab.updateSheet(partTypes);
 }

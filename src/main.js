@@ -1,9 +1,12 @@
 function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Phoenix')
-  .addItem('Обновить', 'service_refresh')
-  .addItem('Добавить', 'service_append')
-  .addItem('Удалить', 'service_delete')
+  .addItem('Обновить', 'serviceRead')
+  .addItem('Добавить', 'serviceCreate')
+  .addItem('Удалить', 'serviceDelete')
+  .addSeparator()
+  .addItem('Показать настройки доступа', 'serviceShowCredentials')
+  .addItem('Сброс настроек доступа', 'serviceResetCredentials')
   .addToUi();
 }
 
@@ -11,7 +14,23 @@ function onEditInstall(e) {
   new PartTypesTab().onEdit(e);
 }
 
-function service_refresh() {
+function serviceShowCredentials() {
+  const options = new Options();
+  const firebase_credentials = options.load('firebase_credentials');
+  const { client_email, project_id, private_key } = firebase_credentials;
+
+  const prompt = `client_email: ${client_email}\n
+  project_id: ${project_id}\n
+  private_key: \n${private_key}`;
+  
+  SpreadsheetApp.getUi().alert(prompt);
+}
+
+function serviceResetCredentials() {
+  new Options().setup('firebase_credentials');
+}
+
+function serviceRead() {
   // TODO:
   // get this from properties service
   const credentials = {
@@ -53,7 +72,7 @@ function service_refresh() {
   Logger.log(result);
 }
 
-function service_append() {
+function serviceCreate() {
   // TODO:
   // get this from properties service
   const credentials = {
@@ -90,7 +109,7 @@ function service_append() {
 
   Logger.log(result);
 
-  service_refresh();
+  serviceRead();
   // const partTypesTab = new PartTypesTab();
 
   // partTypesTab.updateSheet(partTypes);
@@ -149,12 +168,12 @@ function service_edit(rowId) {
 
   Logger.log(result);
 
-  // service_refresh();
+  // serviceRead();
 
   // partTypesTab.updateSheet(partTypes);
 }
 
-function service_delete() {
+function serviceDelete() {
   // TODO:
   // get this from properties service
   const credentials = {
@@ -202,7 +221,7 @@ function service_delete() {
 
   Logger.log(result);
 
-  service_refresh();
+  serviceRead();
 
   // partTypesTab.updateSheet(partTypes);
 }
