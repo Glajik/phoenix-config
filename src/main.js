@@ -83,17 +83,13 @@ function serviceCreate() {
  * Получить все документы и обновить таблицу
  */
 function serviceReadAll() {
-  // TODO:
-  // - определить лист на котором находимся
-  // - получить путь к коллекции в зависимости от листа
+  const sheetName = SpreadsheetApp.getActiveSheet().getName();
   
-  const coll_path = 'PartTypes';
-
-  new Task(Tasks.READ_ALL_DOCS, { coll_path });
-
-  new Task('DB_READ_COLL', { coll_path });
-
-  new Task('SHEET_UPDATE_ALL', { sheetName });
+  const key = `${Tasks.ON_UPDATE_SHEET}:${sheetName}`;
+  
+  const results = new Task(key);
+  
+  Logger.log(results);
 };
 
 /**

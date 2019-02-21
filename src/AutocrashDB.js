@@ -75,29 +75,25 @@ class AutocrashDB {
   /**
    * Запрос всех документов в коллекции
    * @param {*} key ключ сообщения
-   * @param {*} data { coll_path }, где:
+   * @param {*} data { coll_pathб sheetName }, где:
    * - coll_path это путь к коллекции
+   * - sheetName - получатель данных
    */
   read(key, data) {
-    Logger.log('AutocrashDB.read(). key: %s, data: %s', key, data);
-
+    
     switch (key) {
       
-      case Tasks.READ_ALL_DOCS:
-        const { coll_path } = data;
-        try {
-          // REST API метод
-          const result = this.db.getDocuments(coll_path);
-          Logger.log('result: %s', result);
+      case Tasks.DB_READ_COLL:
+        Logger.log('AutocrashDB.read(%s, %s)', key, data);
 
-          // подготавливаем структуру для записи в таблицу
-          const sheetData = result.map(items => items.fields);
-          
-          new Task(Tasks.UPDATE_SHEET, sheetData);
+        const { coll_path, recipient } = data;
 
-        } catch (error) {
-          console.log(error);
-        }
+        // REST API метод
+        const documents = this.db.getDocuments(coll_path);
+        
+        // посылаем данные получателю
+        new Task(recipient, documents);
+
         // success
         return true;
     

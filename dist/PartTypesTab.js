@@ -18,11 +18,14 @@ var PartTypesTab = function (_SheetWrapper) {
   function PartTypesTab() {
     _classCallCheck(this, PartTypesTab);
 
-    return _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
+    var _this = _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
       sheetName: 'Типы деталей',
       numHeaders: 1,
       fields: ['full_path', 'classname', 'type', 'subtype', 'label_full']
     }));
+
+    _this.coll_path = 'PartTypes';
+    return _this;
   }
 
   _createClass(PartTypesTab, [{
@@ -82,19 +85,56 @@ var PartTypesTab = function (_SheetWrapper) {
     }
 
     /**
-     * Обновление всего листа, с предварительной очисткой
+     * Обработчик отправляет сообщение на получение данных из базы,
+     * с нужным именем коллекции, и именем листа, куда эти данные нужно
+     * вернуть
      * @param {*} key ключ
-     * @param {*} sheetData массив строк, представленных списком ключ-значение
+     * @param {*} data { sheetName, sheetData }, где:
+     * - sheetName - имя листа, которое надо обновить
+     * - sheetData - массив строк, представленных списком ключ-значение
      */
 
   }, {
-    key: 'updateSheet',
-    value: function updateSheet(key, sheetData) {
-      Logger.log('PartTypesTab.updateSheet(). key: %s, data: %s', key, sheetData);
+    key: 'onUpdateSheetEvent',
+    value: function onUpdateSheetEvent(key, data) {
+      if (key !== Tasks.ON_UPDATE_SHEET + ':' + this.sheetName) {
+        return;
+      }
 
-      if (key !== Tasks.UPDATE_SHEET) return;
+      Logger.log('PartTypesTab.onUpdateSheetEvent(%s, %s)', key, data);
+
+      new Task(Tasks.DB_READ_COLL, {
+        coll_path: this.coll_path,
+        recipient: Tasks.UPDATE_SHEET + ':' + this.sheetName
+      });
+
+      return true;
+    }
+  }, {
+    key: 'updateSheetHandler',
+
+
+    /**
+     * Обработчик который обновляет лист
+     * @param {*} key имя листа
+     * @param {*} data структура, возвращаемая из базы данных { fields, ...}, где:
+     * - fields - список ключ-значение с данными документа
+     */
+    value: function updateSheetHandler(key, data) {
+      if (key !== Tasks.UPDATE_SHEET + ':' + this.sheetName) {
+        return;
+      }
+
+      Logger.log('PartTypesTab.updateSheetHandler(%s, %s)', key, data);
+
+      // подготавливаем данные для записи в лист
+      var sheetData = data.map(function (items) {
+        return items.fields;
+      });
 
       _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'updateSheet', this).call(this, sheetData);
+
+      return true;
     }
   }]);
 

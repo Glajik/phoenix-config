@@ -16,9 +16,9 @@ class Task {
    */
   constructor(key, data) {       
     // Проверяем наличие ключа
-    if (!Tasks[key]) {
-      throw `Task: не найдено сообщение ${key} в списке ключей`;
-    }
+    // if (!Tasks[key]) {
+    //   throw `Task: не найдено сообщение ${key} в списке ключей`;
+    // }
 
     // вызываем обработчики с телом сообщения, возвращаем результаты
     const results = Task.handlers.map((handler) => {
@@ -26,17 +26,17 @@ class Task {
         const result = handler(key, data);
         return { handler: handler.toString(), result }
       } catch (e) {
-        const message = `Task: Произошла ошибка в обработчике ${handler.toString()} по ключу ${key}.\nПодробности: ${e}`;
-        console.log(message);
-        Logger.log(message);
-        return { handler: handler.toString(), result: new Error(message) }
+        throw `Task: Произошла ошибка "${e}" по ключу "${key}" в обработчике:\n${handler.toString()}`;
+        // return { handler: handler.toString(), result: new Error(message) }
       }
     });
 
-    const notHandled = results.every(item => item === false || item === undefined || item === null);
+    const handled = results.some(({ result }) => result && true);
+    
+    Logger.log('handled: %s', handled);
 
-    if (notHandled) {
-      throw `Task: ни один обработчик не обработал сообщение ${key}`;
+    if (!handled) {
+      throw `Task: ни один обработчик не обработал сообщение "${key}"`;
     }
 
     return results;
@@ -56,7 +56,8 @@ class Task {
     // (key, data) => new AutocrashDB().remove(key, data),
     // (key, data) => new AutocrashDB().query(key, data),
     // (key, data) => new PartTypesTab().onEdit(key, data),
-    (key, data) => new PartTypesTab().updateSheet(key, data),
+    (key, data) => new PartTypesTab().onUpdateSheetEvent(key, data),
+    (key, data) => new PartTypesTab().updateSheetHandler(key, data),
   ];
 };
 
@@ -72,7 +73,8 @@ const Tasks = {
   'DB_READ_COLL': 'DB_READ_COLL',
 
   // 'SINGLE_CELL_EDITED': 'SINGLE_CELL_EDITED',
-  'SHEET_UPDATE_ALL':'SHEET_UPDATE_ALL',
+  'UPDATE_SHEET':'UPDATE_SHEET',
+  'ON_UPDATE_SHEET': 'ON_UPDATE_SHEET'
 };
 
 Object.freeze(Tasks);

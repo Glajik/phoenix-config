@@ -11,6 +11,8 @@ class PartTypesTab extends SheetWrapper {
         'label_full',
       ]
     });
+
+    this.coll_path = 'PartTypes';
   };
 
   /**
@@ -58,15 +60,50 @@ class PartTypesTab extends SheetWrapper {
   }
 
   /**
-   * Обновление всего листа, с предварительной очисткой
+   * Обработчик отправляет сообщение на получение данных из базы,
+   * с нужным именем коллекции, и именем листа, куда эти данные нужно
+   * вернуть
    * @param {*} key ключ
-   * @param {*} sheetData массив строк, представленных списком ключ-значение
+   * @param {*} data { sheetName, sheetData }, где:
+   * - sheetName - имя листа, которое надо обновить
+   * - sheetData - массив строк, представленных списком ключ-значение
    */
-  updateSheet(key, sheetData) {
-    Logger.log('PartTypesTab.updateSheet(). key: %s, data: %s', key, sheetData);
+  onUpdateSheetEvent(key, data) {
+    if (key !== `${Tasks.ON_UPDATE_SHEET}:${this.sheetName}`) {
+      return;
+    }
+    
+    Logger.log('PartTypesTab.onUpdateSheetEvent(%s, %s)', key, data);
 
-    if (key !== Tasks.UPDATE_SHEET) return;
+    new Task(Tasks.DB_READ_COLL,
+      {
+        coll_path: this.coll_path,
+        recipient: `${Tasks.UPDATE_SHEET}:${this.sheetName}`,
+      });
+    
+    return true;
+  };
+
+  /**
+   * Обработчик который обновляет лист
+   * @param {*} key имя листа
+   * @param {*} data структура, возвращаемая из базы данных { fields, ...}, где:
+   * - fields - список ключ-значение с данными документа
+   */
+  updateSheetHandler(key, data) {
+    if (key !== `${Tasks.UPDATE_SHEET}:${this.sheetName}`) {
+      return;
+    }
+
+    Logger.log('PartTypesTab.updateSheetHandler(%s, %s)', key, data);
+
+    // подготавливаем данные для записи в лист
+    const sheetData = data.map(items => items.fields);
 
     super.updateSheet(sheetData);
-  }
+
+    return true;
+  };
+
+
 }
