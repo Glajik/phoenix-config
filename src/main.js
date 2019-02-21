@@ -90,6 +90,10 @@ function serviceReadAll() {
   const coll_path = 'PartTypes';
 
   new Task(Tasks.READ_ALL_DOCS, { coll_path });
+
+  new Task('DB_READ_COLL', { coll_path });
+
+  new Task('SHEET_UPDATE_ALL', { sheetName });
 };
 
 /**

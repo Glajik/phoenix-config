@@ -17,11 +17,11 @@ class Task {
   constructor(key, data) {       
     // Проверяем наличие ключа
     if (!Tasks[key]) {
-      throw `Task: не найден ключ ${key} в списке ключей`;
+      throw `Task: не найдено сообщение ${key} в списке ключей`;
     }
 
     // вызываем обработчики с телом сообщения, возвращаем результаты
-    return Task.handlers.map(handler => {
+    const results = Task.handlers.map((handler) => {
       try {
         const result = handler(key, data);
         return { handler: handler.toString(), result }
@@ -32,6 +32,14 @@ class Task {
         return { handler: handler.toString(), result: new Error(message) }
       }
     });
+
+    const notHandled = results.every(item => item === false || item === undefined || item === null);
+
+    if (notHandled) {
+      throw `Task: ни один обработчик не обработал сообщение ${key}`;
+    }
+
+    return results;
   };
 
   /**
@@ -57,14 +65,14 @@ class Task {
  * Тут по идее должна быть динамическая подпись обработчиков на ключи.
  */
 const Tasks = {
-  'CREATE_DOC': 'CREATE_DOC',
-  'READ_DOC': 'READ_DOC',
-  'UPDATE_DOC': 'UPDATE_DOC',
-  'DELETE_DOC': 'DELETE_DOC',
-  'READ_ALL_DOCS': 'READ_ALL_DOCS',
+  // 'CREATE_DOC': 'CREATE_DOC',
+  // 'READ_DOC': 'READ_DOC',
+  // 'UPDATE_DOC': 'UPDATE_DOC',
+  // 'DELETE_DOC': 'DELETE_DOC',
+  'DB_READ_COLL': 'DB_READ_COLL',
 
-  'SINGLE_CELL_EDITED': 'SINGLE_CELL_EDITED',
-  'UPDATE_SHEET':'UPDATE_SHEET',
+  // 'SINGLE_CELL_EDITED': 'SINGLE_CELL_EDITED',
+  'SHEET_UPDATE_ALL':'SHEET_UPDATE_ALL',
 };
 
 Object.freeze(Tasks);
