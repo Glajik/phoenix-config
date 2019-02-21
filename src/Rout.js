@@ -1,46 +1,29 @@
 /**
  * @class Занимается роутингом сообщений внутри приложения.
- * Другие классы могут подписываться и отписываться на события по 
- * ключам определенным в списке subjects. Обработчики размещаются в списке
- * recipients.
+ * (TODO) Другие классы могут подписываться и отписываться на события по 
+ * ключам определенным в списке k. Обработчики размещаются в списке
+ * handlers.
  */
-class Rout {
+class Task {
   /**
    * Отправляет сообщение с данными обработчикам, подписанным на событие по ключу
-   * @param { String } subject Ключ, по которому будут вызваны обработчики
-   * @param { Object } body Список ключ-значение, структура для каждого ключа
+   * @param { String } key Ключ, по которому будут вызваны обработчики
+   * @param { Object } data Список ключ-значение, структура для каждого ключа
    */
-  constructor(subject, body) {
-    const recipients = Rout.subjects[subject];
-
-    if (!recipients) {
-      throw `Не найден '${subject}' в списке subjects. Rout`;
+  constructor(key, data) {       
+    // Проверяем наличие ключа
+    if (!Tasks[key]) {
+      throw `Task: не найден ключ ${key} в списке ключей`;
     }
 
-    if (recipients.length === 0) {
-      console.log(`Список recipients для ключа '${subject}' пуст. Rout`);
-      Logger.log (`Список recipients для ключа '${subject}' пуст. Rout`);
-      return false;
-    }
-
-    // вытаскиваем получателя по ключу handler
-    const getHandler = handler => {
-      const handler = Rout.handlers[handler];
-      if (!handler) {
-        throw `Не найден recipient, зарегистрированный на ключ '${subject}'`;
-      }
-      return handler;
-    }
-    
-    const sendTo = handler => getHandler(handler)({ subject, body });
-    
     try {
       // вызываем обработчики с телом сообщения
-      recipients.map(handler => sendTo(handler));
-      
+      Task.handlers.map(handler => handler(key, data));
     } catch (e) {
+      const errorMessage = `Task: Произошла ошибка в одном из обработчиков по ключу ${key}`;
+      console.log(errorMessage);
       console.log(e);
-      throw 'Произошла ошибка в одном из обработчиков. Rout';
+      throw errorMessage;
     }
 
     // success
@@ -49,48 +32,33 @@ class Rout {
 
   /**
    * Перечисление получателей сообщений (обработчиков)
-   * Тут по идее должна быть динамическая реализация регистрации обработчиков
+   * (TODO) Тут по идее должна быть динамическая реализация регистрации обработчиков
    * но как это сделать пока не представляю.
    */
-  static recipients = {
-    'AutocrashCreate': ({ subject, body }) => new AutocrashDB().create(subject, body),
-    'AutocrashRead': ({ subject, body }) => new AutocrashDB().read(subject, body),
-    'AutocrashUpdate': ({ subject, body }) => new AutocrashDB().update(subject, body),
-    'AutocrashDelete': ({ subject, body }) => new AutocrashDB().remove(subject, body),
-    'AutocrashQueryAll': ({ subject, body }) => new AutocrashDB().query(subject, body),
-
-    'PartTypesTabOnEditHandler': ({ subject, body }) => new PartTypesTab().onEdit(body),
-  };
-
-  /**
-   * Перечисление тем сообщений (ключей), и получателей на сообщения (подписчиков)
-   * Тут по идее должна быть динамическая подпись обработчиков на ключи.
-   */
-
-  static k = {
-    'SINGLE_CELL_EDITED': [
-      'PartTypesTabOnEditHandler',
-    ],
-
-    'CREATE_DOC': [
-      'AutocrashCreate',
-    ],
-
-    'READ_DOC': [
-      'AutocrashRead',
-    ],
-
-    'UPDATE_DOC': [
-      'AutocrashUpdate',
-    ],
-
-    'DELETE_DOC': [
-      'AutocrashDelete',
-    ],
-
-    'QUERY_ALL_DOCS': [
-      'AutocrashQueryAll',
-    ],
-  };
-  
+  static handlers = [
+    // (key, data) => new AutocrashDB().create(key, data),
+    (key, data) => new AutocrashDB().read(key, data),
+    // (key, data) => new AutocrashDB().update(key, data),
+    // (key, data) => new AutocrashDB().remove(key, data),
+    // (key, data) => new AutocrashDB().query(key, data),
+    // (key, data) => new PartTypesTab().onEdit(key, data),
+    (key, data) => new PartTypesTab().updateSheet(key, data),
+  ];  
 };
+
+/**
+ * Перечисление ключей
+ * Тут по идее должна быть динамическая подпись обработчиков на ключи.
+ */
+const Tasks = {
+  'CREATE_DOC': 'CREATE_DOC',
+  'READ_DOC': 'READ_DOC',
+  'UPDATE_DOC': 'UPDATE_DOC',
+  'DELETE_DOC': 'DELETE_DOC',
+  'READ_ALL_DOCS': 'READ_ALL_DOCS',
+
+  'SINGLE_CELL_EDITED': 'SINGLE_CELL_EDITED',
+  'UPDATE_SHEET':'UPDATE_SHEET',
+};
+
+Object.freeze(Tasks);

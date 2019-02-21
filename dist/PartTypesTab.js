@@ -21,7 +21,7 @@ var PartTypesTab = function (_SheetWrapper) {
     return _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
       sheetName: 'Типы деталей',
       numHeaders: 1,
-      fields: ['full_path', 'coll', 'doc', 'classname', 'type', 'subtype', 'label_full']
+      fields: ['full_path', 'classname', 'type', 'subtype', 'label_full']
     }));
   }
 
@@ -36,7 +36,7 @@ var PartTypesTab = function (_SheetWrapper) {
      */
     value: function onEdit(key, data) {
       switch (key) {
-        case 'SINGLE_CELL_EDITED':
+        case Tasks.SINGLE_CELL_EDITED:
           var sheetName = data.sheetName;
 
 
@@ -73,12 +73,28 @@ var PartTypesTab = function (_SheetWrapper) {
           // update document in datapase
 
 
-          new Rout('UPDATE_DOC', { full_path: full_path, content: content });
+          new Task(Tasks.UPDATE_DOC, { full_path: full_path, content: content });
           break;
 
         default:
           break;
       }
+    }
+
+    /**
+     * Обновление всего листа, с предварительной очисткой
+     * @param {*} key ключ
+     * @param {*} sheetData массив строк, представленных списком ключ-значение
+     */
+
+  }, {
+    key: 'updateSheet',
+    value: function updateSheet(key, sheetData) {
+      Logger.log('PartTypesTab.updateSheet(). key: %s, data: %s', key, sheetData);
+
+      if (key !== Tasks.UPDATE_SHEET) return;
+
+      _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'updateSheet', this).call(this, sheetData);
     }
   }]);
 

@@ -4,82 +4,74 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 /**
  * @class Занимается роутингом сообщений внутри приложения.
- * Другие классы могут подписываться и отписываться на события по 
- * ключам определенным в списке subjects. Обработчики размещаются в списке
- * recipients.
+ * (TODO) Другие классы могут подписываться и отписываться на события по 
+ * ключам определенным в списке k. Обработчики размещаются в списке
+ * handlers.
  */
-var Rout =
+var Task =
 /**
  * Отправляет сообщение с данными обработчикам, подписанным на событие по ключу
- * @param { String } subject Ключ, по которому будут вызваны обработчики
- * @param { Object } body Список ключ-значение, структура для каждого ключа
+ * @param { String } key Ключ, по которому будут вызваны обработчики
+ * @param { Object } data Список ключ-значение, структура для каждого ключа
  */
-function Rout(subject, body) {
-  _classCallCheck(this, Rout);
+function Task(key, data) {
+  _classCallCheck(this, Task);
 
-  // вытаскиваем получателя по ключу handler
-  var getHandler = function getHandler(handler) {
-    return Rout.recipients[handler];
-  };
+  // Проверяем наличие ключа
+  if (!Tasks[key]) {
+    throw 'Task: \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u043A\u043B\u044E\u0447 ' + key + ' \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043A\u043B\u044E\u0447\u0435\u0439';
+  }
 
-  // вызываем функцию получателя с телом сообщения
-  var sendBodyTo = function sendBodyTo(handler) {
-    return getHandler(handler)({ subject: subject, body: body });
-  };
-  var result = recipients.map(function (handler) {
-    return sendBodyTo(handler);
-  });
-  return result;
+  try {
+    // вызываем обработчики с телом сообщения
+    Task.handlers.map(function (handler) {
+      return handler(key, data);
+    });
+  } catch (e) {
+    var errorMessage = 'Task: \u041F\u0440\u043E\u0438\u0437\u043E\u0448\u043B\u0430 \u043E\u0448\u0438\u0431\u043A\u0430 \u0432 \u043E\u0434\u043D\u043E\u043C \u0438\u0437 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u043E\u0432 \u043F\u043E \u043A\u043B\u044E\u0447\u0443 ' + key;
+    console.log(errorMessage);
+    console.log(e);
+    throw errorMessage;
+  }
+
+  // success
+  return true;
 }
 
 /**
  * Перечисление получателей сообщений (обработчиков)
- * Тут по идее должна быть динамическая реализация регистрации обработчиков
+ * (TODO) Тут по идее должна быть динамическая реализация регистрации обработчиков
  * но как это сделать пока не представляю.
  */
+;
 
+Task.handlers = [
+// (key, data) => new AutocrashDB().create(key, data),
+function (key, data) {
+  return new AutocrashDB().read(key, data);
+},
+// (key, data) => new AutocrashDB().update(key, data),
+// (key, data) => new AutocrashDB().remove(key, data),
+// (key, data) => new AutocrashDB().query(key, data),
+// (key, data) => new PartTypesTab().onEdit(key, data),
+function (key, data) {
+  return new PartTypesTab().updateSheet(key, data);
+}];
+;
 
 /**
- * Перечисление тем сообщений (ключей), и получателей на сообщения (подписчиков)
+ * Перечисление ключей
  * Тут по идее должна быть динамическая подпись обработчиков на ключи.
  */
-;
+var Tasks = {
+  'CREATE_DOC': 'CREATE_DOC',
+  'READ_DOC': 'READ_DOC',
+  'UPDATE_DOC': 'UPDATE_DOC',
+  'DELETE_DOC': 'DELETE_DOC',
+  'READ_ALL_DOCS': 'READ_ALL_DOCS',
 
-Rout.recipients = {
-  'AutocrashCreate': function AutocrashCreate(_ref) {
-    var subject = _ref.subject,
-        body = _ref.body;
-    return new AutocrashDB().create(subject);
-  },
-  'AutocrashRead': function AutocrashRead(_ref2) {
-    var subject = _ref2.subject,
-        body = _ref2.body;
-    return new AutocrashDB().read(subject);
-  },
-  'AutocrashUpdate': function AutocrashUpdate(_ref3) {
-    var subject = _ref3.subject,
-        body = _ref3.body;
-    return new AutocrashDB().update(subject, body);
-  },
-  'AutocrashDelete': function AutocrashDelete(_ref4) {
-    var subject = _ref4.subject,
-        body = _ref4.body;
-    return new AutocrashDB().delete(subject, body);
-  },
-  'AutocrashQueryAll': function AutocrashQueryAll(_ref5) {
-    var subject = _ref5.subject;
-    return new AutocrashDB().query(subject);
-  },
-
-  'PartTypesTabOnEditHandler': function PartTypesTabOnEditHandler(_ref6) {
-    var subject = _ref6.subject,
-        body = _ref6.body;
-    return new PartTypesTab().onEdit(body);
-  }
+  'SINGLE_CELL_EDITED': 'SINGLE_CELL_EDITED',
+  'UPDATE_SHEET': 'UPDATE_SHEET'
 };
-Rout.subjects = {
-  'SINGLE_CELL_EDITED': ['PartTypesTabOnEditHandler'],
 
-  'UPDATE_DOC': ['AutocrashUpdate']
-};
-;
+Object.freeze(Tasks);

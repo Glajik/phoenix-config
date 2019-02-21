@@ -1,7 +1,7 @@
 function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Phoenix')
-  .addItem('Обновить', 'serviceRead')
+  .addItem('Обновить', 'serviceReadAll')
   .addItem('Добавить', 'serviceCreate')
   .addItem('Удалить', 'serviceDelete')
   .addSeparator()
@@ -33,7 +33,7 @@ function onEditInstall(e) {
 
   if (isOneCell) {
     const onEditEventStructure = { sheetName, sheet, row, column, numRows, numColumns, value, oldValue };
-    new Rout('SINGLE_CELL_EDITED', onEditEventStructure);
+    new Task(Tasks.SINGLE_CELL_EDITED, onEditEventStructure);
   }
 
   // TODO:
@@ -51,29 +51,11 @@ function serviceShowCredentials() {
   private_key: \n${private_key}`;
   
   SpreadsheetApp.getUi().alert(prompt);
-}
+};
 
 function serviceResetCredentials() {
   new Options().setup('firebase_credentials');
-}
-
-/**
- * Обновить таблицу
- */
-function serviceQueryAll() {
-  // TODO:
-  // - определить лист на котором находимся
-  // - получить путь к коллекции в зависимости от листа
-
-  try {
-    const result = new Rout(`CREATE_DOC`, { coll, template });
-    
-    Logger.log('result: %s', result);
-
-  } catch (error) {
-    Logger.log(error);
-  }
-}
+};
 
 /**
  * Создать документ
@@ -85,7 +67,7 @@ function serviceCreate() {
   // - получить путь документу в зависимости от листа
   // - как-то определить каким должен быть шаблон в зависимости от листа
   
-  const coll = 'PartTypes';
+  const coll_path = 'PartTypes';
   
   const template = {
     class: 'NEW_CLASS',
@@ -93,17 +75,22 @@ function serviceCreate() {
     sub_type: 'NEW_SUB_TYPE',
     name: 'Новое имя',
   };
+  
+  new Task(Tasks.CREATE_DOC, { coll_path, template });
+};
 
-  try {
-    const result = new Rout(`CREATE_DOC`, { coll, template });
+/**
+ * Получить все документы и обновить таблицу
+ */
+function serviceReadAll() {
+  // TODO:
+  // - определить лист на котором находимся
+  // - получить путь к коллекции в зависимости от листа
+  
+  const coll_path = 'PartTypes';
 
-    Logger.log('result: %s', result);
-
-  } catch (error) {
-    Logger.log(error);
-  }
-
-}
+  new Task(Tasks.READ_ALL_DOCS, { coll_path });
+};
 
 /**
  * Удалить документ
@@ -140,11 +127,5 @@ function serviceDelete() {
     throw 'Нет full_path';
   }
   
-  try {
-    const result = new Rout('DELETE_DOC', { full_path });
-
-    Logger.log('result: %s', result);
-  } catch (error) {
-    Logger.log(error);
-  }
-}
+  new Task(Tasks.DELETE_DOC, { full_path });
+};

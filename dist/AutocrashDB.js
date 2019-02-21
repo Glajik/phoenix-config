@@ -14,11 +14,18 @@ var AutocrashDB = function () {
   function AutocrashDB() {
     _classCallCheck(this, AutocrashDB);
 
-    this.credentials = new Options().load('firebase_credentials');
+    // загружаем разрешения
+    var _load = new Options().load('firebase_credentials'),
+        client_email = _load.client_email,
+        private_key = _load.private_key,
+        project_id = _load.project_id;
 
-    var project_id = this.credentials.project_id;
+    // доступ к базе данных
 
 
+    this.db = new Firestore(client_email, private_key.replace(/\\n/g, '\n'), project_id);
+
+    // для работы с путями, возможно будет отдельным классом
     this.path = {
       root: 'projects/' + project_id + '/databases/(default)/documents/',
 
@@ -68,73 +75,156 @@ var AutocrashDB = function () {
     };
   }
 
+  /**
+   * Создание документа
+   * @param {*} key ключ сообщения
+   * @param {*} data { coll_path }, которая содержит путь к коллекции
+   */
+
+
   _createClass(AutocrashDB, [{
     key: 'create',
-    value: function create(key) {
-      var _credentials = this.credentials,
-          client_email = _credentials.client_email,
-          project_id = _credentials.project_id,
-          private_key = _credentials.private_key;
-    }
-  }, {
-    key: 'read',
-    value: function read() {
-      var _credentials2 = this.credentials,
-          client_email = _credentials2.client_email,
-          project_id = _credentials2.project_id,
-          private_key = _credentials2.private_key;
+    value: function create(key, data) {
+      Logger.log('create() - key: %s, data: %s', key, data);
+
+      switch (key) {
+        case Tasks.CREATE_DOC:
+          var coll_path = data.coll_path;
+
+          try {
+            // REST API метод
+            var result = firestore.updateDocument(coll_path, content);
+            Logger.log('result: %s', result);
+          } catch (error) {
+            console.log(error);
+          }
+          // succes
+          return true;
+
+        default:
+          throw 'Ошибка - Неверный идендификатор ключа. AutocrashDB, create()';
+      }
     }
 
     /**
-     * Обновление документа, или всей коллекции, в зависимости от ключа.
-     * Если ключ, не верный, ничего не делает, возвращает false
+     * Запрос всех документов в коллекции
+     * @param {*} key ключ сообщения
+     * @param {*} data { coll_path }, где:
+     * - coll_path это путь к коллекции
+     */
+
+  }, {
+    key: 'read',
+    value: function read(key, data) {
+      Logger.log('AutocrashDB.read(). key: %s, data: %s', key, data);
+
+      switch (key) {
+
+        case Tasks.READ_ALL_DOCS:
+          var coll_path = data.coll_path;
+
+          try {
+            // REST API метод
+            var result = this.db.getDocuments(coll_path);
+            Logger.log('result: %s', result);
+
+            // подготавливаем структуру для записи в таблицу
+            var sheetData = result.map(function (items) {
+              return items.fields;
+            });
+
+            new Task(Tasks.UPDATE_SHEET, sheetData);
+          } catch (error) {
+            console.log(error);
+          }
+          // success
+          return true;
+
+        default:
+          return false;
+      }
+    }
+
+    /**
+     * Обновление документа
      * @param {String} key Ключ сообщения
-     * @param {Object} data Структура данных { coll, doc, content }, где:
-     * - field это поле, которое требуется обновить
-     * - value это новое значение
+     * @param {Object} data { full_path, content }, где:
+     * - full_path это полный путь к документу
+     * - content это список ключ-значение, которые надо обновить в док-те
      */
 
   }, {
     key: 'update',
     value: function update(key, data) {
-      Logger.log('key: %s, data: %s', key, data);
+      Logger.log('update() - key: %s, data: %s', key, data);
 
       switch (key) {
-        case 'UPDATE_DOC_BY_PATH':
-          var credentials = new Options().load('firebase_credentials');
-          var client_email = credentials.client_email,
-              project_id = credentials.project_id,
-              private_key = credentials.private_key;
+        case Tasks.UPDATE_DOC:
           var full_path = data.full_path,
-              content = data.content;
+              _content = data.content;
+
+          // извлекаем частичный путь, от корневой коллекции текущей базы данных
 
           var path = this.path.fromRoot(full_path);
-          var firestore = new Firestore(client_email, private_key, project_id);
-          var result = firestore.updateDocument(path, content);
-          Logger.log('result: %s', result);
-          return result;
+
+          try {
+            // REST API метод
+            var result = firestore.updateDocument(path, _content);
+            Logger.log('result: %s', result);
+          } catch (error) {
+            console.log(error);
+          }
+
+          // success
+          return true;
 
         default:
-          throw 'Ошибка - Неверный идендификатор ключа. AutocrashDB, Update()';
+          throw 'Неверный идендификатор ключа. AutocrashDB, update()';
       }
     }
   }, {
-    key: 'delete',
-    value: function _delete() {
-      var _credentials3 = this.credentials,
-          client_email = _credentials3.client_email,
-          project_id = _credentials3.project_id,
-          private_key = _credentials3.private_key;
-    }
-  }, {
-    key: 'extractPath',
+    key: 'remove',
 
 
     /**
-     * Возвращает путь документа от корня базы данных. Например вернет 'PartTypes/ 
-     * @param {String} full_path полный путь к документу
+     * Удаление документа
+     * @param {*} key Ключ сообщения
+     * @param {*} data { full_path }, где:
+     * - full_path это полный путь к документу
      */
-    value: function extractPath(full_path) {}
+    value: function remove(key, data) {
+      Logger.log('remove() - key: %s, data: %s', key, data);
+
+      switch (key) {
+        case Tasks.DELETE_DOC:
+          var full_path = data.full_path;
+
+          var path = this.path.fromRoot(full_path);
+
+          try {
+            var result = firestore.deleteDocument(path);
+            Logger.log('result: %s', result);
+          } catch (error) {
+            console.log(error);
+          }
+
+          // success
+          return true;
+
+        default:
+          throw 'Неверный идендификатор ключа. AutocrashDB, remove()';
+      }
+    }
+  }, {
+    key: 'query',
+
+
+    /**
+     * Запрос
+     * @param {*} key ключ сообщения
+     * @param {*} data данные
+     */
+    value: function query(key, data) {}
   }]);
 
   return AutocrashDB;

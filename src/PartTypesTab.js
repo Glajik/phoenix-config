@@ -5,8 +5,6 @@ class PartTypesTab extends SheetWrapper {
       numHeaders: 1,
       fields: [
         'full_path',
-        'coll',
-        'doc',
         'classname',
         'type',
         'subtype',
@@ -22,7 +20,7 @@ class PartTypesTab extends SheetWrapper {
    */
   onEdit(key, data) {
     switch (key) {
-      case 'SINGLE_CELL_EDITED':
+      case Tasks.SINGLE_CELL_EDITED:
         const { sheetName } = data;
     
         if (sheetName !== this.sheetName) {
@@ -51,12 +49,24 @@ class PartTypesTab extends SheetWrapper {
         const { full_path } = super.getRowData(row);
     
         // update document in datapase
-        new Rout(`UPDATE_DOC`, { full_path, content });
+        new Task(Tasks.UPDATE_DOC, { full_path, content });
       break;
     
       default:
         break;
-    }
-    
+    } 
+  }
+
+  /**
+   * Обновление всего листа, с предварительной очисткой
+   * @param {*} key ключ
+   * @param {*} sheetData массив строк, представленных списком ключ-значение
+   */
+  updateSheet(key, sheetData) {
+    Logger.log('PartTypesTab.updateSheet(). key: %s, data: %s', key, sheetData);
+
+    if (key !== Tasks.UPDATE_SHEET) return;
+
+    super.updateSheet(sheetData);
   }
 }
