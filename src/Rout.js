@@ -1,14 +1,18 @@
 /**
- * @class Занимается роутингом сообщений внутри приложения.
- * (TODO) Другие классы могут подписываться и отписываться на события по 
- * ключам определенным в списке k. Обработчики размещаются в списке
- * handlers.
+ * Занимается роутингом сообщений внутри приложения.
+ * (TODO: Другие классы могут подписываться и отписываться на события по 
+ * ключам). 
+ * - Ключи определенным в списке k.
+ * - Обработчики размещаются в списке handlers.
  */
 class Task {
   /**
    * Отправляет сообщение с данными обработчикам, подписанным на событие по ключу
    * @param { String } key Ключ, по которому будут вызваны обработчики
    * @param { Object } data Список ключ-значение, структура для каждого ключа
+   * @return { Array } [{ handler, result }, ...] , где:
+   * - handler это тело обработчика в текстовом виде, для отладки
+   * - result содержит true если успешно (обработчик должен вернуть или true или объект ошибки или throw exception)
    */
   constructor(key, data) {       
     // Проверяем наличие ключа
@@ -16,24 +20,26 @@ class Task {
       throw `Task: не найден ключ ${key} в списке ключей`;
     }
 
-    try {
-      // вызываем обработчики с телом сообщения
-      Task.handlers.map(handler => handler(key, data));
-    } catch (e) {
-      const errorMessage = `Task: Произошла ошибка в одном из обработчиков по ключу ${key}`;
-      console.log(errorMessage);
-      console.log(e);
-      throw errorMessage;
-    }
-
-    // success
-    return true;
+    // вызываем обработчики с телом сообщения, возвращаем результаты
+    return Task.handlers.map(handler => {
+      try {
+        const result = handler(key, data);
+        return { handler: handler.toString(), result }
+      } catch (e) {
+        const message = `Task: Произошла ошибка в обработчике ${handler.toString()} по ключу ${key}.\nПодробности: ${e}`;
+        console.log(message);
+        Logger.log(message);
+        return { handler: handler.toString(), result: new Error(message) }
+      }
+    });
   };
 
   /**
    * Перечисление получателей сообщений (обработчиков)
-   * (TODO) Тут по идее должна быть динамическая реализация регистрации обработчиков
-   * но как это сделать пока не представляю.
+   * Ключ и данные пересылаются всем обработчикам. Их задача решать обработать сообщение
+   * или ингорировать.
+   * (TODO: Тут по идее должна быть динамическая реализация регистрации обработчиков
+   * но как это сделать пока не представляю)
    */
   static handlers = [
     // (key, data) => new AutocrashDB().create(key, data),
@@ -43,7 +49,7 @@ class Task {
     // (key, data) => new AutocrashDB().query(key, data),
     // (key, data) => new PartTypesTab().onEdit(key, data),
     (key, data) => new PartTypesTab().updateSheet(key, data),
-  ];  
+  ];
 };
 
 /**

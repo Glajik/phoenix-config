@@ -3,16 +3,20 @@
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /**
- * @class Занимается роутингом сообщений внутри приложения.
- * (TODO) Другие классы могут подписываться и отписываться на события по 
- * ключам определенным в списке k. Обработчики размещаются в списке
- * handlers.
+ * Занимается роутингом сообщений внутри приложения.
+ * (TODO: Другие классы могут подписываться и отписываться на события по 
+ * ключам). 
+ * - Ключи определенным в списке k.
+ * - Обработчики размещаются в списке handlers.
  */
 var Task =
 /**
  * Отправляет сообщение с данными обработчикам, подписанным на событие по ключу
  * @param { String } key Ключ, по которому будут вызваны обработчики
  * @param { Object } data Список ключ-значение, структура для каждого ключа
+ * @return { Array } список объектов с результатами, или ошибками ввиде { handler, result }
+ * - handler это тело обработчика в текстовом виде, для отладки
+ * - result содержит true если успешно (обработчик должен вернуть или true или объект ошибки или throw exception)
  */
 function Task(key, data) {
   _classCallCheck(this, Task);
@@ -22,26 +26,25 @@ function Task(key, data) {
     throw 'Task: \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u043A\u043B\u044E\u0447 ' + key + ' \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u043A\u043B\u044E\u0447\u0435\u0439';
   }
 
-  try {
-    // вызываем обработчики с телом сообщения
-    Task.handlers.map(function (handler) {
-      return handler(key, data);
-    });
-  } catch (e) {
-    var errorMessage = 'Task: \u041F\u0440\u043E\u0438\u0437\u043E\u0448\u043B\u0430 \u043E\u0448\u0438\u0431\u043A\u0430 \u0432 \u043E\u0434\u043D\u043E\u043C \u0438\u0437 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u043E\u0432 \u043F\u043E \u043A\u043B\u044E\u0447\u0443 ' + key;
-    console.log(errorMessage);
-    console.log(e);
-    throw errorMessage;
-  }
-
-  // success
-  return true;
+  // вызываем обработчики с телом сообщения, возвращаем результаты
+  return Task.handlers.map(function (handler) {
+    try {
+      var result = handler(key, data);
+      return { handler: handler.toString(), result: result };
+    } catch (e) {
+      var message = 'Task: \u041F\u0440\u043E\u0438\u0437\u043E\u0448\u043B\u0430 \u043E\u0448\u0438\u0431\u043A\u0430 \u0432 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u0435 ' + handler.toString() + ' \u043F\u043E \u043A\u043B\u044E\u0447\u0443 ' + key + '.\n\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438: ' + e;
+      console.log(message);
+      return { handler: handler.toString(), result: new Error(message) };
+    }
+  });
 }
 
 /**
  * Перечисление получателей сообщений (обработчиков)
- * (TODO) Тут по идее должна быть динамическая реализация регистрации обработчиков
- * но как это сделать пока не представляю.
+ * Ключ и данные пересылаются всем обработчикам. Их задача решать обработать сообщение
+ * или ингорировать.
+ * (TODO: Тут по идее должна быть динамическая реализация регистрации обработчиков
+ * но как это сделать пока не представляю)
  */
 ;
 
