@@ -4,40 +4,59 @@ class PartTypesTab extends SheetWrapper {
       sheetName: 'Типы деталей',
       numHeaders: 1,
       fields: [
-        'document_path',
-        'class',
+        'full_path',
+        'coll',
+        'doc',
+        'classname',
         'type',
-        'sub_type',
-        'name',
+        'subtype',
+        'label_full',
       ]
     });
   };
 
-  onEdit(e) {
-    if (e.range.getSheet().getName() !== this.sheetName) {
-      return;
-    };
+  /**
+   * Обработчик события редактирования из таблицы
+   * @param {String} key Ключ события
+   * @param {onEditEventStructure} data Структура данных
+   */
+  onEdit(key, data) {
+    switch (key) {
+      case 'SINGLE_CELL_EDITED':
+        const { sheetName } = data;
+    
+        if (sheetName !== this.sheetName) {
+          return;
+        };
+        
+        Logger.log('onEdit event on sheet: %s', sheetName);
+    
+        const { row, column } = data;
+    
+        const isHeadersRow = row < this.firstRow;
+    
+        if (isHeadersRow) {
+          Logger.log('is header row - exit');
+          return;
+        }
+    
+        Logger.log('cell %s %s edited', row, column);
+    
+        // подготавливаем данные для отправки
+        const { value } = data;
+        const field = this.findColumnFieldName(column);
+        const content = { [field]: value };
 
-    const obj = {
-      rowId: e.range.getRow(),
-      rows: e.range.getNumRows(),
-      column: e.range.getColumn(),
-      columns: e.range.getNumColumns(),
-      range: e.range,
-      oldValue: e.oldValue,
-      newValue: e.value,
-    };
-
-    const { rowId, rows, columns } = obj;
-    const isOneCell = rows === 1 && columns === 1;
-    const isHeadersRow = rowId < this.firstRow;
-
-    if (!isOneCell || isHeadersRow) {
-      return;
+        // получаем данные из таблицы, указывающие путь к документу
+        const { full_path } = super.getRowData(row);
+    
+        // update document in datapase
+        new Rout(`UPDATE_DOC`, { full_path, content });
+      break;
+    
+      default:
+        break;
     }
-
-    Logger.log('Cell %s %s edited', rowId, obj.column);
-
-    service_edit(rowId);
+    
   }
 }

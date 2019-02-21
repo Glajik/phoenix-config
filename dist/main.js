@@ -7,9 +7,37 @@ function onOpen(e) {
   ui.createMenu('Phoenix').addItem('Обновить', 'serviceRead').addItem('Добавить', 'serviceCreate').addItem('Удалить', 'serviceDelete').addSeparator().addItem('Показать настройки доступа', 'serviceShowCredentials').addItem('Сброс настроек доступа', 'serviceResetCredentials').addToUi();
 }
 
+/**
+ * Обработчик событий при редактировании таблицы
+ * @param {Object} e Структура события при редактировании таблицы
+ */
 function onEditInstall(e) {
-  new PartTypesTab().onEdit(e);
-}
+  // new PartTypesTab().onEdit(e);
+  var range = e.range,
+      value = e.value,
+      oldValue = e.oldValue;
+
+  // data from event
+
+  var sheet = range.getSheet();
+  var sheetName = sheet.getName();
+  var row = range.getRow();
+  var numRows = e.range.getNumRows();
+  var column = range.getColumn();
+  var numColumns = e.range.getNumColumns();
+
+  // Если одна ячейка редактировалась
+  var isOneCell = numRows === 1 && numColumns === 1;
+
+  if (isOneCell) {
+    var onEditEventStructure = { sheetName: sheetName, sheet: sheet, row: row, column: column, numRows: numRows, numColumns: numColumns, value: value, oldValue: oldValue };
+    new Rout('SINGLE_CELL_EDITED', onEditEventStructure);
+  }
+
+  // TODO:
+  // Если одна ячейка была очищена
+  // Если несколько ячеек
+};
 
 function serviceShowCredentials() {
   var options = new Options();

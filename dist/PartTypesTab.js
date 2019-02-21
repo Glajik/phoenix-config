@@ -2,6 +2,10 @@
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -17,41 +21,64 @@ var PartTypesTab = function (_SheetWrapper) {
     return _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
       sheetName: 'Типы деталей',
       numHeaders: 1,
-      fields: ['document_path', 'class', 'type', 'sub_type', 'name']
+      fields: ['full_path', 'coll', 'doc', 'classname', 'type', 'subtype', 'label_full']
     }));
   }
 
   _createClass(PartTypesTab, [{
     key: 'onEdit',
-    value: function onEdit(e) {
-      if (e.range.getSheet().getName() !== this.sheetName) {
-        return;
-      };
 
-      var obj = {
-        rowId: e.range.getRow(),
-        rows: e.range.getNumRows(),
-        column: e.range.getColumn(),
-        columns: e.range.getNumColumns(),
-        range: e.range,
-        oldValue: e.oldValue,
-        newValue: e.value
-      };
 
-      var rowId = obj.rowId,
-          rows = obj.rows,
-          columns = obj.columns;
+    /**
+     * Обработчик события редактирования из таблицы
+     * @param {String} key Ключ события
+     * @param {onEditEventStructure} data Структура данных
+     */
+    value: function onEdit(key, data) {
+      switch (key) {
+        case 'SINGLE_CELL_EDITED':
+          var sheetName = data.sheetName;
 
-      var isOneCell = rows === 1 && columns === 1;
-      var isHeadersRow = rowId < this.firstRow;
 
-      if (!isOneCell || isHeadersRow) {
-        return;
+          if (sheetName !== this.sheetName) {
+            return;
+          };
+
+          Logger.log('onEdit event on sheet: %s', sheetName);
+
+          var row = data.row,
+              column = data.column;
+
+
+          var isHeadersRow = row < this.firstRow;
+
+          if (isHeadersRow) {
+            Logger.log('is header row - exit');
+            return;
+          }
+
+          Logger.log('cell %s %s edited', row, column);
+
+          // подготавливаем данные для отправки
+          var value = data.value;
+
+          var field = this.findColumnFieldName(column);
+          var content = _defineProperty({}, field, value);
+
+          // получаем данные из таблицы, указывающие путь к документу
+
+          var _get$call = _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'getRowData', this).call(this, row),
+              full_path = _get$call.full_path;
+
+          // update document in datapase
+
+
+          new Rout('UPDATE_DOC', { full_path: full_path, content: content });
+          break;
+
+        default:
+          break;
       }
-
-      Logger.log('Cell %s %s edited', rowId, obj.column);
-
-      service_edit(rowId);
     }
   }]);
 

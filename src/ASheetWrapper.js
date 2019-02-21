@@ -1,10 +1,24 @@
+/**
+ * @class Инкапсулирует работу с содержимым листа
+ */
 class SheetWrapper {
-  constructor({ sheetName, fields, numHeaders }) {
+  /**
+   * @param {*} sheetConfiguration Cтруктура данных, где: 
+   * sheetName - имя листа; fields - список полей, 
+   * или названия колонок, начиная слева; numHeaders - количество строк 
+   * начиная с самой верхней, которые являются заголовком.
+   */
+  constructor(sheetConfiguration) {
+    const { sheetName, fields, numHeaders } = sheetConfiguration;
     this._fields = fields || ['id'];
     this._numHeaders = numHeaders;
     this._sheetName = sheetName || 'Sheet 1';
   }
 
+  /**
+   * Геттер возвращает объект листа таблицы
+   * @return {Object} лист таблицы, из Sreadsheet API
+   */
   get sheet() {
     if (this._sheet === undefined) {
         this._sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(this._sheetName);
@@ -12,14 +26,27 @@ class SheetWrapper {
     return this._sheet;
   };
 
+  /**
+   * Геттер возвращает название листа, указанное пользователем
+   * @return {String} название листа
+   */
   get sheetName() {
     return this._sheetName;
   }
 
+  /**
+   * Геттер возвращает список полей
+   * @return {Array} поля
+   */
   get fields() {
     return this._fields;
   }
 
+  /**
+   * Геттер возвращает все данные листа, ввиде массива строк, которые представлены
+   * объектами, где каждая колонка проименована из fields.
+   * Заголовки исключены. Поле rowId обозначает реальный номер строки (отсчет с единицы).
+   */
   get sheetData() {
     if (this._sheetData === undefined) {
       const dataRange = this.sheet.getDataRange();
@@ -29,13 +56,21 @@ class SheetWrapper {
     return this._sheetData;
   };
 
+  /**
+   * Геттер возвращает реальный номер первой строки с данными
+   */
   get firstRow() {
     return this._numHeaders + 1;
   }
 
+  /**
+   * @private Метод преобразует двумерный массив данных таблицы в 
+   * массив объектов, в которых представлены строки
+   * @param {*} valuesColl двумерный массив
+   * @param {*} fields список полей
+   * @param {*} numHeaders количество строк-заголовков
+   */
   convert(valuesColl, fields, numHeaders) {
-    
-    // remove header
     if (numHeaders) {
       for (let i = 0; i < numHeaders; i++) {
         valuesColl.shift();
@@ -59,44 +94,88 @@ class SheetWrapper {
     return objectColl;
   }; 
 
+  /**
+   * Метод преобразует стуктуру строки в массив значений
+   * @param {*} object Структура строки
+   */
   makeValuesFromObject(object) {
     return Helper.makeValuesFromObject(object, this.fields);
   };
 
+  /**
+   * Метод преобразует данные из таблицы, представленные ввиде
+   * [['1', 'a'], ['2', 'b'], ... ], в массив структур строк
+   * @param {*} values двумерный массив
+   */
   makeObjectFromValues(values) {
     return Helper.makeObjectFromValues(values, this.fields);
   };
 
+  /**
+   * Метод преобразует массив структур строк в двумерный массив
+   * @param {*} objectColl массив структур строк
+   */
   convertToValuesColl(objectColl) {
     return Helper.convertToValuesColl(objectColl, this.fields);
   };
 
+  /**
+   * Возвращает номер столбца по названию
+   * @param {*} name название столбца
+   */
   findColumnId(name) {
     const fieldsNames = this.fields;
     return Helper.find(name, fieldsNames) + 1;
   };
 
+  /**
+   * Возвращает название поля для столбца
+   * @param {Number} column Номер столбца
+   */
+  findColumnFieldName(column) {
+    return this.fields[column - 1];
+  };
+
+  /**
+   * Возвращает диапазон строки - объект range, из Sreadsheet API
+   * @param {*} rowId номер строки
+   */
   getRowRange(rowId) {
     const { sheet, fields } = this;
     const numColumns = fields.length;
     return sheet.getRange(rowId, 1, 1, numColumns);
   };
 
+  /**
+   * Возвращает данные диапазона строки ввиде масива значений
+   * @param {*} range объект range, из Sreadsheet API
+   */
   getDataFromRange(range) {
     const values = range.getValues();
     return this.makeObjectFromValues(values[0]);
   };
 
+  /**
+   * Возвращает данные строки ввиде списка ключ-значение (объект строки)
+   * @param {*} rowId номер строки
+   */
   getRowData(rowId) {
     const range = this.getRowRange(rowId);
     const data = this.getDataFromRange(range);
     return { ...data, rowId };
   };
 
+  /**
+   * Метод возвращает номер строки с активной ячейкой (с фокусом на ней)
+   */
   getSelectedRow() {
     return this.sheet.getActiveCell().getRowIndex();
   };
 
+  /**
+   * Обновляет данные во всем листе. Перед обновлением лист очищается
+   * @param {*} objectColl массив структур строк
+   */
   updateSheet(objectColl) {
     const { sheet } = this;
     
@@ -110,6 +189,9 @@ class SheetWrapper {
     sheet.getRange(row, column, numRows, numColumns).setValues(valuesColl);
   };
 
+  /**
+   * Очистить лист
+   */
   clearSheet() {
     const { sheet } = this;
     const row = 2;
@@ -126,7 +208,11 @@ class SheetWrapper {
     SpreadsheetApp.flush();
   };
 
-  // array version
+  /**
+   * Обновляет данные строки. Версия с массивом.
+   * @param {*} rowId номер строки
+   * @param {*} values массив значений строки
+   */
   updateRow(rowId, values) {
     if (!values instanceof Array) {
       return;
@@ -144,7 +230,11 @@ class SheetWrapper {
     return range;
   };
 
-  // object version
+  /**
+   * Обновляет данные строки. Версия с массивом.
+   * @param {*} rowId номер строки
+   * @param {*} data структура строки
+   */
   updateRow(rowId, data) {
     if (!data instanceof Object) {
       return;
@@ -169,11 +259,18 @@ class SheetWrapper {
     return range;
   };
 
+  /**
+   * Вставить новую строку в начале таблицы (после заголовку)
+   */
   insertRow() {
     this.sheet.insertRowBefore(this.firstRow);
     return this.firstRow;
   };
 
+  /**
+   * Добавить строку в конце таблицы
+   * @param {*} values массив значений 
+   */
   appendRow(values) {
     if (!values instanceof Array) {
       return;
@@ -181,6 +278,10 @@ class SheetWrapper {
     this.sheet.appendRow(values);
   };
 
+  /**
+   * Спрятать строки по условию
+   * @param {*} predicate условие (callback)
+   */
   hide(predicate) {
     const data = this.sheetData;
     const filtered = data.filter(predicate);
@@ -208,6 +309,9 @@ class SheetWrapper {
         ({ rowId, count }) => this.sheet.hideRows(rowId, count));
   };
 
+  /**
+   * Отобразить все строки
+   */
   showAll() {
     const length = this.sheet.getLastRow();
     this.sheet.showRows(3, length);
@@ -215,6 +319,9 @@ class SheetWrapper {
 
 };
 
+/**
+ * Спрятать строки
+ */
 function hideRows() {
   const { sent, other, refund } = Reference.status;
   const statusOneFrom = [ sent, other, refund ];
