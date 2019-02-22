@@ -3,47 +3,38 @@
  * используется Firestore.
  */
 class AutocrashDB {
-  constructor() {
+  // для работы с путями, возможно будет отдельным классом
+  path = {
+    root: `projects/${this.project_id}/databases/(default)/documents/`,
 
-    // загружаем разрешения
-    const { client_email, private_key, project_id } = new Options().load('firebase_credentials');
-    
-    // доступ к базе данных
-    this.db = new Firestore(client_email, private_key.replace(/\\n/g,'\n'), project_id);
-    
-    // для работы с путями, возможно будет отдельным классом
-    this.path = {
-      root: `projects/${project_id}/databases/(default)/documents/`,
-  
-      /**
-       * Разбивает полный путь на компоненты
-       * @param {*} full_path полный путь к документу
-       */
-      getComponents(full_path) {
-        const rootElements = this.root.split('/');
-        const has = (x, coll) => coll.some(item => item === x);
-        
-        // удаляем элементы пути, которые есть в корневом пути
-        const result = full_path.split('/').filter(item => !has(item, rootElements));
-        
-        // переворачиваем список
-        const [ doc, ...collection ] = result.reverse();
-        
-        // не забываем перевернуть обратно путь коллекций
-        const coll = collection.reverse().join('/');
-        return { coll, doc };
-      },
-  
-      /**
-       * возвращает путь к документу, но не от самого начала
-       * @param {*} full_path полный путь к документу
-       */
-      fromRoot(full_path) {
-        const { coll, doc } = this.getComponents(full_path);
-        return coll + '/' + doc;
-      }
-    };
-  }
+    /**
+     * Разбивает полный путь на компоненты
+     * @param {*} full_path полный путь к документу
+     */
+    getComponents(full_path) {
+      const rootElements = this.root.split('/');
+      const has = (x, coll) => coll.some(item => item === x);
+      
+      // удаляем элементы пути, которые есть в корневом пути
+      const result = full_path.split('/').filter(item => !has(item, rootElements));
+      
+      // переворачиваем список
+      const [ doc, ...collection ] = result.reverse();
+      
+      // не забываем перевернуть обратно путь коллекций
+      const coll = collection.reverse().join('/');
+      return { coll, doc };
+    },
+
+    /**
+     * возвращает путь к документу, но не от самого начала
+     * @param {*} full_path полный путь к документу
+     */
+    fromRoot(full_path) {
+      const { coll, doc } = this.getComponents(full_path);
+      return coll + '/' + doc;
+    }
+  };
   
 
   /**
@@ -80,7 +71,6 @@ class AutocrashDB {
    * - sheetName - получатель данных
    */
   read(key, data) {
-    
     switch (key) {
       
       case Tasks.DB_READ_COLL:
@@ -171,5 +161,59 @@ class AutocrashDB {
    */
   query(key, data) {
 
+  }
+
+  /**
+   * Возвращает объект для работы с базой данных
+   */
+  get db() {
+    if (!this.db_) {
+      // загружаем разрешения
+      const { client_email, private_key: raw_private_key, project_id } = new Options().load('firebase_credentials');
+      this.project_id_ = project_id;
+      const private_key = raw_private_key.replace(/\\n/g, '\n');
+      // доступ к базе данных
+      this.db_ = new Firestore(client_email, private_key, project_id);
+    }
+
+    return this.db_;
+  };
+
+  /**
+   * Немного мудрено, но проще пока не придумал, чтобы при этом не светить private_key
+   */
+  get project_id() {
+    if (!this.project_id_) {
+      const { project_id } = new Options().load('firebase_credentials')
+      this.project_id_ = project_id;
+    }
+    return this.project_id_;
+  }
+
+  onEvent(key, data) {
+    // const CREATE
+    const READ = Msg.DB_READ_COLL;
+    // const UPDATE
+    // const DELETE
+    // const QUERY
+
+    switch (key) {
+      case READ:
+        Logger.log('AutocrashDB.onEvent(%s, %s)', key, data);
+
+        const { coll_path, replyMsg } = data;
+
+        // REST API метод
+        const documents = this.db.getDocuments(coll_path);
+        
+        // посылаем данные получателю
+        broadcast(replyMsg, documents);
+
+        // success
+        return documents;
+    
+      default:
+        return false;
+    }
   }
 }

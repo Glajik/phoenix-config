@@ -14,20 +14,8 @@ var AutocrashDB = function () {
   function AutocrashDB() {
     _classCallCheck(this, AutocrashDB);
 
-    // загружаем разрешения
-    var _load = new Options().load('firebase_credentials'),
-        client_email = _load.client_email,
-        private_key = _load.private_key,
-        project_id = _load.project_id;
-
-    // доступ к базе данных
-
-
-    this.db = new Firestore(client_email, private_key.replace(/\\n/g, '\n'), project_id);
-
-    // для работы с путями, возможно будет отдельным классом
     this.path = {
-      root: 'projects/' + project_id + '/databases/(default)/documents/',
+      root: 'projects/' + this.project_id + '/databases/(default)/documents/',
 
       /**
        * Разбивает полный путь на компоненты
@@ -74,16 +62,18 @@ var AutocrashDB = function () {
       }
     };
   }
-
-  /**
-   * Создание документа
-   * @param {*} key ключ сообщения
-   * @param {*} data { coll_path }, которая содержит путь к коллекции
-   */
+  // для работы с путями, возможно будет отдельным классом
 
 
   _createClass(AutocrashDB, [{
     key: 'create',
+
+
+    /**
+     * Создание документа
+     * @param {*} key ключ сообщения
+     * @param {*} data { coll_path }, которая содержит путь к коллекции
+     */
     value: function create(key, data) {
       Logger.log('create() - key: %s, data: %s', key, data);
 
@@ -117,7 +107,6 @@ var AutocrashDB = function () {
   }, {
     key: 'read',
     value: function read(key, data) {
-
       switch (key) {
 
         case Tasks.DB_READ_COLL:
@@ -221,6 +210,75 @@ var AutocrashDB = function () {
      * @param {*} data данные
      */
     value: function query(key, data) {}
+
+    /**
+     * Возвращает объект для работы с базой данных
+     */
+
+  }, {
+    key: 'onEvent',
+    value: function onEvent(key, data) {
+      // const CREATE
+      var READ = Msg.DB_READ_COLL;
+      // const UPDATE
+      // const DELETE
+      // const QUERY
+
+      switch (key) {
+        case READ:
+          Logger.log('AutocrashDB.onEvent(%s, %s)', key, data);
+
+          var coll_path = data.coll_path,
+              replyMsg = data.replyMsg;
+
+          // REST API метод
+
+          var documents = this.db.getDocuments(coll_path);
+
+          // посылаем данные получателю
+          broadcast(replyMsg, documents);
+
+          // success
+          return documents;
+
+        default:
+          return false;
+      }
+    }
+  }, {
+    key: 'db',
+    get: function get() {
+      if (!this.db_) {
+        // загружаем разрешения
+        var _load = new Options().load('firebase_credentials'),
+            client_email = _load.client_email,
+            raw_private_key = _load.private_key,
+            project_id = _load.project_id;
+
+        this.project_id_ = project_id;
+        var private_key = raw_private_key.replace(/\\n/g, '\n');
+        // доступ к базе данных
+        this.db_ = new Firestore(client_email, private_key, project_id);
+      }
+
+      return this.db_;
+    }
+  }, {
+    key: 'project_id',
+
+
+    /**
+     * Немного мудрено, но проще пока не придумал, чтобы при этом не светить private_key
+     */
+    get: function get() {
+      if (!this.project_id_) {
+        var _load2 = new Options().load('firebase_credentials'),
+            project_id = _load2.project_id;
+
+        this.project_id_ = project_id;
+      }
+      return this.project_id_;
+    }
   }]);
 
   return AutocrashDB;

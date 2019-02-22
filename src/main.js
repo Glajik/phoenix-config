@@ -1,9 +1,9 @@
 function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Phoenix')
-  .addItem('Обновить', 'serviceReadAll')
-  .addItem('Добавить', 'serviceCreate')
-  .addItem('Удалить', 'serviceDelete')
+  .addItem('Обновить', 'onClickMenuItem_refreshSheet')
+  .addItem('Добавить', 'onClickMenuItem_newItem')
+  .addItem('Удалить', 'onClickMenuItem_deleteItem')
   .addSeparator()
   .addItem('Показать настройки доступа', 'serviceShowCredentials')
   .addItem('Сброс настроек доступа', 'serviceResetCredentials')
@@ -60,7 +60,7 @@ function serviceResetCredentials() {
 /**
  * Создать документ
  */
-function serviceCreate() {
+function onClickMenuItem_newItem() {
   Logger.log('Создание документа');
   // TODO: 
   // - определить лист на котором находимся
@@ -80,14 +80,21 @@ function serviceCreate() {
 };
 
 /**
- * Получить все документы и обновить таблицу
+ * Получить все документы и обновить таблицу.
+ * 1. оповещаем всех что произошло событие обновления листа
+ * 2. обработчики в классах листов перехватывают событие проверяет его ли имя листа
+ * затем один из них оповещает БД, что нужны данные и с каким ключом их рассылать.
+ * 3. обработчик в классе БД перехватывает событие, выполняет запрос, и оповещает всех
+ * что пришли данные
+ * 4. обработчики в классах таблиц перехватывают сообщение с данными и проверяют есть ли
+ * в ключе имя листа, и если да - обновляют лист
  */
-function serviceReadAll() {
+function onClickMenuItem_refreshSheet() {
   const sheetName = SpreadsheetApp.getActiveSheet().getName();
   
-  const key = `${Tasks.ON_UPDATE_SHEET}:${sheetName}`;
+  const key = composeMsg(Msg.ON_CLICK_REFRESH_SHEET, sheetName);
   
-  const results = new Task(key);
+  const results = broadcast(key);
   
   Logger.log(results);
 };
@@ -95,7 +102,7 @@ function serviceReadAll() {
 /**
  * Удалить документ
  */
-function serviceDelete() {
+function onClickMenuItem_deleteItem() {
   Logger.log('Удалить документ');
   
   // TODO:

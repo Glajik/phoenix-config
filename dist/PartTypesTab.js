@@ -85,56 +85,44 @@ var PartTypesTab = function (_SheetWrapper) {
     }
 
     /**
-     * Обработчик отправляет сообщение на получение данных из базы,
-     * с нужным именем коллекции, и именем листа, куда эти данные нужно
-     * вернуть
+     * Обработчик сообщений
      * @param {*} key ключ
-     * @param {*} data { sheetName, sheetData }, где:
-     * - sheetName - имя листа, которое надо обновить
-     * - sheetData - массив строк, представленных списком ключ-значение
+     * @param {*} data данные, в зависимости от сообщения
      */
 
   }, {
-    key: 'onUpdateSheetEvent',
-    value: function onUpdateSheetEvent(key, data) {
-      if (key !== Tasks.ON_UPDATE_SHEET + ':' + this.sheetName) {
-        return;
+    key: 'onEvent',
+    value: function onEvent(key, data) {
+      var ON_REFRESH = composeMsg(Msg.ON_CLICK_REFRESH_SHEET, this.sheetName);
+      var ON_DATA = composeMsg(Msg.DB_ON_DATA, this.sheetName);
+      var DB_READ = Msg.DB_READ_COLL;
+
+      switch (key) {
+        case ON_REFRESH:
+          Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
+
+          broadcast(DB_READ, {
+            coll_path: this.coll_path,
+            replyMsg: ON_DATA
+          });
+
+          return 'success';
+
+        case ON_DATA:
+          Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
+
+          // подготавливаем данные для записи в лист
+          var sheetData = data.map(function (items) {
+            return items.fields;
+          });
+
+          _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'updateSheet', this).call(this, sheetData);
+
+          return 'success';
+
+        default:
+          return; // ignored
       }
-
-      Logger.log('PartTypesTab.onUpdateSheetEvent(%s, %s)', key, data);
-
-      new Task(Tasks.DB_READ_COLL, {
-        coll_path: this.coll_path,
-        recipient: Tasks.UPDATE_SHEET + ':' + this.sheetName
-      });
-
-      return true;
-    }
-  }, {
-    key: 'updateSheetHandler',
-
-
-    /**
-     * Обработчик который обновляет лист
-     * @param {*} key имя листа
-     * @param {*} data структура, возвращаемая из базы данных { fields, ...}, где:
-     * - fields - список ключ-значение с данными документа
-     */
-    value: function updateSheetHandler(key, data) {
-      if (key !== Tasks.UPDATE_SHEET + ':' + this.sheetName) {
-        return;
-      }
-
-      Logger.log('PartTypesTab.updateSheetHandler(%s, %s)', key, data);
-
-      // подготавливаем данные для записи в лист
-      var sheetData = data.map(function (items) {
-        return items.fields;
-      });
-
-      _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'updateSheet', this).call(this, sheetData);
-
-      return true;
     }
   }]);
 
