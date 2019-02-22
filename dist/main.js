@@ -60,22 +60,11 @@ function serviceResetCredentials() {
  * Создать документ
  */
 function onClickMenuItem_newItem() {
-  Logger.log('Создание документа');
-  // TODO: 
-  // - определить лист на котором находимся
-  // - получить путь документу в зависимости от листа
-  // - как-то определить каким должен быть шаблон в зависимости от листа
+  var sheetName = SpreadsheetApp.getActiveSheet().getName();
 
-  var coll_path = 'PartTypes';
+  var key = composeMsg(Msg.ON_CLICK_NEW_ITEM, sheetName);
 
-  var template = {
-    class: 'NEW_CLASS',
-    type: 'NEW_TYPE',
-    sub_type: 'NEW_SUB_TYPE',
-    name: 'Новое имя'
-  };
-
-  new Task(Tasks.CREATE_DOC, { coll_path: coll_path, template: template });
+  var results = broadcast(key);
 };
 
 /**
@@ -95,7 +84,7 @@ function onClickMenuItem_refreshSheet() {
 
   var results = broadcast(key);
 
-  Logger.log(results);
+  // Logger.log(results);
 };
 
 /**

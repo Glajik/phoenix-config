@@ -279,6 +279,18 @@ class SheetWrapper {
   };
 
   /**
+   * Добавить строку в конце таблицы
+   * @param {*} data структура строки
+   */
+  appendRow(data) {
+    if (!data instanceof Object) {
+      return;
+    }
+    const lastRowId = this.sheet.getLastRow();
+    return this.updateRow(lastRowId, data);
+  };
+
+  /**
    * Спрятать строки по условию
    * @param {*} predicate условие (callback)
    */

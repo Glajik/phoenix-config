@@ -38,32 +38,6 @@ class AutocrashDB {
   
 
   /**
-   * Создание документа
-   * @param {*} key ключ сообщения
-   * @param {*} data { coll_path }, которая содержит путь к коллекции
-   */
-  create(key, data) {
-    Logger.log('create() - key: %s, data: %s', key, data);
-
-    switch (key) {
-      case Tasks.CREATE_DOC:
-        const { coll_path } = data;
-        try {
-          // REST API метод
-          const result = firestore.updateDocument(coll_path, content);
-          Logger.log('result: %s', result);
-        } catch (error) {
-          console.log(error);
-        }
-        // succes
-        return true;
-    
-      default:
-        throw 'Ошибка - Неверный идендификатор ключа. AutocrashDB, create()';
-    }
-  }
-
-  /**
    * Запрос всех документов в коллекции
    * @param {*} key ключ сообщения
    * @param {*} data { coll_pathб sheetName }, где:
@@ -79,7 +53,7 @@ class AutocrashDB {
         const { coll_path, recipient } = data;
 
         // REST API метод
-        const documents = this.db.getDocuments(coll_path);
+        const documents = this.firestore.getDocuments(coll_path);
         
         // посылаем данные получателю
         new Task(recipient, documents);
@@ -166,17 +140,17 @@ class AutocrashDB {
   /**
    * Возвращает объект для работы с базой данных
    */
-  get db() {
-    if (!this.db_) {
+  get firestore() {
+    if (!this.firestore_) {
       // загружаем разрешения
       const { client_email, private_key: raw_private_key, project_id } = new Options().load('firebase_credentials');
       this.project_id_ = project_id;
       const private_key = raw_private_key.replace(/\\n/g, '\n');
       // доступ к базе данных
-      this.db_ = new Firestore(client_email, private_key, project_id);
+      this.firestore_ = new Firestore(client_email, private_key, project_id);
     }
 
-    return this.db_;
+    return this.firestore_;
   };
 
   /**
@@ -191,27 +165,34 @@ class AutocrashDB {
   }
 
   onEvent(key, data) {
-    // const CREATE
+    const CREATE = Msg.DB_CREATE_DOC;
     const READ = Msg.DB_READ_COLL;
     // const UPDATE
     // const DELETE
     // const QUERY
-
+    
     switch (key) {
       case READ:
         Logger.log('AutocrashDB.onEvent(%s, %s)', key, data);
 
-        const { coll_path, replyMsg } = data;
-
         // REST API метод
-        const documents = this.db.getDocuments(coll_path);
+        const documents = this.firestore.getDocuments(data.coll_path);
         
         // посылаем данные получателю
-        broadcast(replyMsg, documents);
+        broadcast(data.replyMsg, documents);
 
         // success
         return documents;
-    
+      
+      case CREATE:
+        const document = this.firestore.createDocument(data.coll_path, data.content);
+
+        // посылаем данные получателю
+        broadcast(data.replyMsg, document);
+
+        // success
+        return document;
+
       default:
         return false;
     }

@@ -8,11 +8,24 @@ class PartTypesTab extends SheetWrapper {
         'classname',
         'type',
         'subtype',
-        'label_full',
+        'name',
+        'aliases',
       ]
     });
 
     this.coll_path = 'PartTypes';
+
+    this.template = {
+      classname: 'NEW_CLASS',
+      type: 'NEW_TYPE',
+      subtype: 'NEW_SUB_TYPE',
+      name: 'Новая деталь',
+      aliases: {
+        'Карточка': 'Нов. дет.',
+        'Корешок мастера': 'Н.дт.',
+        'Приемка': 'Деталь'
+      },
+    };
   };
 
   /**
@@ -66,8 +79,13 @@ class PartTypesTab extends SheetWrapper {
    */
   onEvent(key, data) {
     const ON_REFRESH = composeMsg(Msg.ON_CLICK_REFRESH_SHEET, this.sheetName);
-    const ON_DATA = composeMsg(Msg.DB_ON_DATA, this.sheetName);
+    const ON_NEW = composeMsg(Msg.ON_CLICK_NEW_ITEM, this.sheetName);
+    
+    const DB_CREATE = Msg.DB_CREATE_DOC;
+    const ON_CREATED = composeMsg(Msg.DB_ON_CREATED, this.sheetName);
+    
     const DB_READ = Msg.DB_READ_COLL;
+    const ON_DATA = composeMsg(Msg.DB_ON_DATA, this.sheetName);
 
     switch (key) {
       case ON_REFRESH:
@@ -80,6 +98,17 @@ class PartTypesTab extends SheetWrapper {
 
         return 'success';
 
+      case ON_NEW:
+        Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
+
+        broadcast(DB_CREATE, {
+          coll_path: this.coll_path,
+          content: this.template,
+          replyMsg: ON_CREATED,
+        });
+
+      return 'success';
+
       case ON_DATA:
         Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
 
@@ -89,6 +118,15 @@ class PartTypesTab extends SheetWrapper {
         super.updateSheet(sheetData);
         
         return 'success';
+
+      case ON_CREATED:
+        Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
+
+        // добавляем данные в лист
+        Logger.log('\n\nresponse: %s \n type: %s\n\n', data.fields, typeof(data.fields))
+        super.appendRow(data.fields);
+        
+        return 'success';        
 
       default:
         return; // ignored

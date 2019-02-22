@@ -1,5 +1,7 @@
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
@@ -21,10 +23,22 @@ var PartTypesTab = function (_SheetWrapper) {
     var _this = _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
       sheetName: 'Типы деталей',
       numHeaders: 1,
-      fields: ['full_path', 'classname', 'type', 'subtype', 'label_full']
+      fields: ['full_path', 'classname', 'type', 'subtype', 'name', 'aliases']
     }));
 
     _this.coll_path = 'PartTypes';
+
+    _this.template = {
+      classname: 'NEW_CLASS',
+      type: 'NEW_TYPE',
+      subtype: 'NEW_SUB_TYPE',
+      name: 'Новая деталь',
+      aliases: {
+        'Карточка': 'Нов. дет.',
+        'Корешок мастера': 'Н.дт.',
+        'Приемка': 'Деталь'
+      }
+    };
     return _this;
   }
 
@@ -94,8 +108,13 @@ var PartTypesTab = function (_SheetWrapper) {
     key: 'onEvent',
     value: function onEvent(key, data) {
       var ON_REFRESH = composeMsg(Msg.ON_CLICK_REFRESH_SHEET, this.sheetName);
-      var ON_DATA = composeMsg(Msg.DB_ON_DATA, this.sheetName);
+      var ON_NEW = composeMsg(Msg.ON_CLICK_NEW_ITEM, this.sheetName);
+
+      var DB_CREATE = Msg.DB_CREATE_DOC;
+      var ON_CREATED = composeMsg(Msg.DB_ON_CREATED, this.sheetName);
+
       var DB_READ = Msg.DB_READ_COLL;
+      var ON_DATA = composeMsg(Msg.DB_ON_DATA, this.sheetName);
 
       switch (key) {
         case ON_REFRESH:
@@ -104,6 +123,17 @@ var PartTypesTab = function (_SheetWrapper) {
           broadcast(DB_READ, {
             coll_path: this.coll_path,
             replyMsg: ON_DATA
+          });
+
+          return 'success';
+
+        case ON_NEW:
+          Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
+
+          broadcast(DB_CREATE, {
+            coll_path: this.coll_path,
+            content: this.template,
+            replyMsg: ON_CREATED
           });
 
           return 'success';
@@ -117,6 +147,15 @@ var PartTypesTab = function (_SheetWrapper) {
           });
 
           _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'updateSheet', this).call(this, sheetData);
+
+          return 'success';
+
+        case ON_CREATED:
+          Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
+
+          // добавляем данные в лист
+          Logger.log('\n\nresponse: %s \n type: %s\n\n', data.fields, _typeof(data.fields));
+          _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'appendRow', this).call(this, data.fields);
 
           return 'success';
 

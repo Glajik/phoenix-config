@@ -66,35 +66,8 @@ var AutocrashDB = function () {
 
 
   _createClass(AutocrashDB, [{
-    key: 'create',
+    key: 'read',
 
-
-    /**
-     * Создание документа
-     * @param {*} key ключ сообщения
-     * @param {*} data { coll_path }, которая содержит путь к коллекции
-     */
-    value: function create(key, data) {
-      Logger.log('create() - key: %s, data: %s', key, data);
-
-      switch (key) {
-        case Tasks.CREATE_DOC:
-          var coll_path = data.coll_path;
-
-          try {
-            // REST API метод
-            var result = firestore.updateDocument(coll_path, content);
-            Logger.log('result: %s', result);
-          } catch (error) {
-            console.log(error);
-          }
-          // succes
-          return true;
-
-        default:
-          throw 'Ошибка - Неверный идендификатор ключа. AutocrashDB, create()';
-      }
-    }
 
     /**
      * Запрос всех документов в коллекции
@@ -103,9 +76,6 @@ var AutocrashDB = function () {
      * - coll_path это путь к коллекции
      * - sheetName - получатель данных
      */
-
-  }, {
-    key: 'read',
     value: function read(key, data) {
       switch (key) {
 
@@ -117,7 +87,7 @@ var AutocrashDB = function () {
 
           // REST API метод
 
-          var documents = this.db.getDocuments(coll_path);
+          var documents = this.firestore.getDocuments(coll_path);
 
           // посылаем данные получателю
           new Task(recipient, documents);
@@ -146,7 +116,7 @@ var AutocrashDB = function () {
       switch (key) {
         case Tasks.UPDATE_DOC:
           var full_path = data.full_path,
-              _content = data.content;
+              content = data.content;
 
           // извлекаем частичный путь, от корневой коллекции текущей базы данных
 
@@ -154,7 +124,7 @@ var AutocrashDB = function () {
 
           try {
             // REST API метод
-            var result = firestore.updateDocument(path, _content);
+            var result = firestore.updateDocument(path, content);
             Logger.log('result: %s', result);
           } catch (error) {
             console.log(error);
@@ -218,7 +188,7 @@ var AutocrashDB = function () {
   }, {
     key: 'onEvent',
     value: function onEvent(key, data) {
-      // const CREATE
+      var CREATE = Msg.DB_CREATE_DOC;
       var READ = Msg.DB_READ_COLL;
       // const UPDATE
       // const DELETE
@@ -228,27 +198,32 @@ var AutocrashDB = function () {
         case READ:
           Logger.log('AutocrashDB.onEvent(%s, %s)', key, data);
 
-          var coll_path = data.coll_path,
-              replyMsg = data.replyMsg;
-
           // REST API метод
-
-          var documents = this.db.getDocuments(coll_path);
+          var documents = this.firestore.getDocuments(data.coll_path);
 
           // посылаем данные получателю
-          broadcast(replyMsg, documents);
+          broadcast(data.replyMsg, documents);
 
           // success
           return documents;
+
+        case CREATE:
+          var document = this.firestore.createDocument(data.coll_path, data.content);
+
+          // посылаем данные получателю
+          broadcast(data.replyMsg, document);
+
+          // success
+          return document;
 
         default:
           return false;
       }
     }
   }, {
-    key: 'db',
+    key: 'firestore',
     get: function get() {
-      if (!this.db_) {
+      if (!this.firestore_) {
         // загружаем разрешения
         var _load = new Options().load('firebase_credentials'),
             client_email = _load.client_email,
@@ -258,10 +233,10 @@ var AutocrashDB = function () {
         this.project_id_ = project_id;
         var private_key = raw_private_key.replace(/\\n/g, '\n');
         // доступ к базе данных
-        this.db_ = new Firestore(client_email, private_key, project_id);
+        this.firestore_ = new Firestore(client_email, private_key, project_id);
       }
 
-      return this.db_;
+      return this.firestore_;
     }
   }, {
     key: 'project_id',

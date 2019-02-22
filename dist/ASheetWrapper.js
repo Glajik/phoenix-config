@@ -308,6 +308,21 @@ var SheetWrapper = function () {
       this.sheet.appendRow(values);
     }
   }, {
+    key: 'appendRow',
+
+
+    /**
+     * Добавить строку в конце таблицы
+     * @param {*} data структура строки
+     */
+    value: function appendRow(data) {
+      if (!data instanceof Object) {
+        return;
+      }
+      var lastRowId = this.sheet.getLastRow();
+      return this.updateRow(lastRowId, data);
+    }
+  }, {
     key: 'hide',
 
 
