@@ -95,7 +95,7 @@ class AutocrashDB {
         new Task(recipient, documents);
 
         // success
-        return true;
+        return documents;
     
       default:
         return  false;

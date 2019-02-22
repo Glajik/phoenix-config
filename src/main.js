@@ -1,7 +1,7 @@
 function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Phoenix')
-  .addItem('Обновить', 'serviceReadAll')
+  .addItem('Обновить', 'onClickMenuItem_refreshSheet')
   .addItem('Добавить', 'serviceCreate')
   .addItem('Удалить', 'serviceDelete')
   .addSeparator()
@@ -82,12 +82,10 @@ function serviceCreate() {
 /**
  * Получить все документы и обновить таблицу
  */
-function serviceReadAll() {
+function refreshSheetMenuItem_onClick() {
   const sheetName = SpreadsheetApp.getActiveSheet().getName();
-  
-  const key = `${Tasks.ON_UPDATE_SHEET}:${sheetName}`;
-  
-  const results = new Task(key);
+
+  const result = FlowsForSheet.refreshSheet(sheetName);
   
   Logger.log(results);
 };

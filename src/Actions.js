@@ -4,59 +4,56 @@
 // 4. -> PartTypesTab.updateSheetHandler()
 
 /**
- * Занимается роутингом сообщений внутри приложения.
- * (TODO: Другие классы могут подписываться и отписываться на события по 
- * ключам). 
- * - Ключи определенным в списке k.
- * - Обработчики размещаются в списке handlers.
+ * Отправляет сообщение с данными обработчикам, подписанным на событие по ключу
+ * @param { String } key Ключ, по которому будут вызваны обработчики
+ * @param { Object } data Список ключ-значение, структура для каждого ключа
+ * @return { Array } [{ handler, result }, ...] , где:
+ * - handler это тело обработчика в текстовом виде, для отладки
+ * - result содержит true если успешно (обработчик должен вернуть или true или объект ошибки или throw exception)
  */
-class Act {
-  /**
-   * Отправляет сообщение с данными обработчикам, подписанным на событие по ключу
-   * @param { String } key Ключ, по которому будут вызваны обработчики
-   * @param { Object } data Список ключ-значение, структура для каждого ключа
-   * @return { Array } [{ handler, result }, ...] , где:
-   * - handler это тело обработчика в текстовом виде, для отладки
-   * - result содержит true если успешно (обработчик должен вернуть или true или объект ошибки или throw exception)
-   */
-  constructor(key, data) {       
-    // Проверяем наличие ключа
-    // if (!Tasks[key]) {
-    //   throw `Task: не найдено сообщение ${key} в списке ключей`;
-    // }
+const broadcast = (key, data) => {
+  // вызываем обработчики с телом сообщения, возвращаем результаты
+  const handlersNames = Object.keys(Handlers);
 
-    // вызываем обработчики с телом сообщения, возвращаем результаты
-    const results = Task.handlers.map((handler) => {
-      try {
-        const result = handler(key, data);
-        return { handler: handler.toString(), result }
-      } catch (e) {
-        throw `Task: Произошла ошибка "${e}" по ключу "${key}" в обработчике:\n${handler.toString()}`;
-        // return { handler: handler.toString(), result: new Error(message) }
-      }
-    });
+  const results = handlersNames.map((hName) => send(hName, key, data));
 
-    const handled = results.some(({ result }) => result && true);
-    
-    Logger.log('handled: %s', handled);
+  const handled = results.some(({ result }) => result && true);
+  
+  Logger.log('handled: %s', handled);
 
-    if (!handled) {
-      throw `Task: ни один обработчик не обработал сообщение "${key}"`;
-    }
+  if (!handled) {
+    throw `Task: ни один обработчик не обработал сообщение "${key}"`;
+  }
 
-    return results;
-  };
-
-  /**
-   * Перечисление получателей сообщений (обработчиков)
-   * Ключ и данные пересылаются всем обработчикам. Их задача решать обработать сообщение
-   * или ингорировать.
-   * (TODO: Тут по идее должна быть динамическая реализация регистрации обработчиков
-   * но как это сделать пока не представляю)
-   */
+  return results;
 };
 
-const handlers = {
+/**
+ * Отправляет сообщение конкретному обработчику
+ * @param {*} key ключ
+ * @param {*} data данные ключ-значение
+ */
+const send = (handlerName, key, data) => {
+  const getHandler = name => Handlers[name];
+
+  try {
+    const handler = getHandler(handlerName);
+
+    if (!handler) {
+      throw `Task: не найден обработчик ${handlerName}`;
+    }
+
+    const result = handler(key, data);
+    
+    return { handler: handler.toString(), result }
+  
+  } catch (e) {
+    throw `Task: Произошла ошибка "${e}" по ключу "${key}" в обработчике:\n${handler.toString()}`;
+    // return { handler: handler.toString(), result: new Error(message) }
+  }
+}
+
+const Handlers = {
   // (key, data) => new AutocrashDB().create(key, data),
   'dbRead': (key, data) => new AutocrashDB().read(key, data),
   // (key, data) => new AutocrashDB().update(key, data),
@@ -67,18 +64,79 @@ const handlers = {
   'updateSheetHandler': (key, data) => new PartTypesTab().updateSheetHandler(key, data),
 };
 
-const Flows = {
+/**
+ * Точки входа. Последовательности выполнения. Только через сообщения.
+ * Допустим вызов чистых функций.
+ * const Flows = {
+ *   handlers: {},
+ *   actions: {},
+ *   keys: {},
+ * };
+ */
+
+class FlowsForSheet {
+  constructor() {
+  }
+
+  keys = {
+    'DB_READ_COLL': 'DB_READ_COLL',
+    'updateSheetHandler': 'updateSheetHandler',
+    'refreshSheetMenuItem_onClick': 'refreshSheetMenuItem_onClick',
+  };
+
+  handlers = [
+    (key, data) => new PartTypesTab().onUpdateSheetEvent(key, data),
+    (key, data) => new PartTypesTab().updateSheetHandler(key, data),
+  ];
+  
+  // получить путь к коллекции
+  getCollPath = sheetName => {
+    const ref = {
+      'Типы деталей': 'PartTypes',
+    }
+    return ref[sheetName] || null;
+  };
+
+  // соединитель ключей
+  join = (...args) => args.join(':');
+
+  /**
+   * Обновление листа
+   * @param {*} sheetName имя листа
+   */
+  refreshSheet(sheetName) {
+    const { sheetName } = data;
+
+  }
+};
+
+  const 
   // Эта идея лучше, т.к. нет жесткой привязки к методам классов
   // классы по прежнему не знают друг о друге, и кто примет сообщение
   // Плюс - наглядно видна последовательность действий и 
-  'someTestFlow': (data) => {
+  'updateSheetFlow': (data) => {
     const { sheetName } = data;
 
-    // вариант вызова функции напрямую
+    // получить путь к коллекции
+    const getCollPath = sheetName => {
+      const ref = {
+        'Типы деталей': 'PartTypes',
+      }
+      return ref[sheetName] || null;
+    };
+
+    // соединитель ключей
+    const join = (...args) => args.join(':');
+
+    // вариант вызова чистой функции
     const coll_path = getCollPath(sheetName);
 
     // вариант отправки сообщения и его обработка здесь же
-    const result = send('DB_READ_COLL', { coll_path });
+    const { result } = send('DB_READ_COLL', { coll_path });
+
+    if (!result) {
+      throw `Flows: Данные не получены`;
+    }
 
     // отправки результата
     const newKey = join('UPDATE_SHEET', sheetName);
@@ -92,7 +150,7 @@ const Flows = {
 
   // вызовы методов классов на прямую (НЕ ГУД)
   // хотя классы и не знают друг о друге
-  'onUpdateSheetFlow': (key, data) => {
+  'badUpdateSheetFlow': (key, data) => {
     const partTypesTab = new PartTypesTab();
     
     const partTypesTabKey = join(Keys.sheet.updateSheet, partTypesTab.sheetName);
@@ -107,8 +165,6 @@ const Flows = {
         partTypesTab.updateSheet(sheetData);
       break;
     }
-
-
     
     // вариант отправки сообщения и его перехват затем в другом Action
     broadcast('DB_READ_COLL', { coll_path });

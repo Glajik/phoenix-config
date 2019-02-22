@@ -72,7 +72,7 @@ class PartTypesTab extends SheetWrapper {
     if (key !== `${Tasks.ON_UPDATE_SHEET}:${this.sheetName}`) {
       return;
     }
-    
+
     Logger.log('PartTypesTab.onUpdateSheetEvent(%s, %s)', key, data);
 
     new Task(Tasks.DB_READ_COLL,
