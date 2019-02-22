@@ -286,8 +286,8 @@ class SheetWrapper {
     if (!data instanceof Object) {
       return;
     }
-    const lastRowId = this.sheet.getLastRow();
-    return this.updateRow(lastRowId, data);
+    const nextRowId = this.sheet.getLastRow() + 1;
+    return this.updateRow(nextRowId, data);
   };
 
   /**

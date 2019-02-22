@@ -19,9 +19,9 @@ var AutocrashDB = function () {
 
       /**
        * Разбивает полный путь на компоненты
-       * @param {*} full_path полный путь к документу
+       * @param {*} doc_path полный путь к документу
        */
-      getComponents: function getComponents(full_path) {
+      getComponents: function getComponents(doc_path) {
         var rootElements = this.root.split('/');
         var has = function has(x, coll) {
           return coll.some(function (item) {
@@ -30,7 +30,7 @@ var AutocrashDB = function () {
         };
 
         // удаляем элементы пути, которые есть в корневом пути
-        var result = full_path.split('/').filter(function (item) {
+        var result = doc_path.split('/').filter(function (item) {
           return !has(item, rootElements);
         });
 
@@ -51,10 +51,10 @@ var AutocrashDB = function () {
 
       /**
        * возвращает путь к документу, но не от самого начала
-       * @param {*} full_path полный путь к документу
+       * @param {*} doc_path полный путь к документу
        */
-      fromRoot: function fromRoot(full_path) {
-        var _getComponents = this.getComponents(full_path),
+      fromRoot: function fromRoot(doc_path) {
+        var _getComponents = this.getComponents(doc_path),
             coll = _getComponents.coll,
             doc = _getComponents.doc;
 
@@ -103,8 +103,8 @@ var AutocrashDB = function () {
     /**
      * Обновление документа
      * @param {String} key Ключ сообщения
-     * @param {Object} data { full_path, content }, где:
-     * - full_path это полный путь к документу
+     * @param {Object} data { doc_path, content }, где:
+     * - doc_path это полный путь к документу
      * - content это список ключ-значение, которые надо обновить в док-те
      */
 
@@ -115,12 +115,12 @@ var AutocrashDB = function () {
 
       switch (key) {
         case Tasks.UPDATE_DOC:
-          var full_path = data.full_path,
+          var doc_path = data.doc_path,
               content = data.content;
 
           // извлекаем частичный путь, от корневой коллекции текущей базы данных
 
-          var path = this.path.fromRoot(full_path);
+          var path = this.path.fromRoot(doc_path);
 
           try {
             // REST API метод
@@ -144,17 +144,17 @@ var AutocrashDB = function () {
     /**
      * Удаление документа
      * @param {*} key Ключ сообщения
-     * @param {*} data { full_path }, где:
-     * - full_path это полный путь к документу
+     * @param {*} data { doc_path }, где:
+     * - doc_path это полный путь к документу
      */
     value: function remove(key, data) {
       Logger.log('remove() - key: %s, data: %s', key, data);
 
       switch (key) {
         case Tasks.DELETE_DOC:
-          var full_path = data.full_path;
+          var doc_path = data.doc_path;
 
-          var path = this.path.fromRoot(full_path);
+          var path = this.path.fromRoot(doc_path);
 
           try {
             var result = firestore.deleteDocument(path);
@@ -201,17 +201,24 @@ var AutocrashDB = function () {
           // REST API метод
           var documents = this.firestore.getDocuments(data.coll_path);
 
+          Logger.log('getDocuments() -> %s', documents);
+
           // посылаем данные получателю
-          broadcast(data.replyMsg, documents);
+          broadcast(data.replyMsg, { documents: documents });
 
           // success
           return documents;
 
         case CREATE:
-          var document = this.firestore.createDocument(data.coll_path, data.content);
+          var docResponse = this.firestore.createDocument(data.coll_path, data.content);
+
+          // подготавливаем данные
+          var document = unwrapDocumentFields_(docResponse);
+
+          Logger.log('createDocument() -> %s', document);
 
           // посылаем данные получателю
-          broadcast(data.replyMsg, document);
+          broadcast(data.replyMsg, { document: document });
 
           // success
           return document;

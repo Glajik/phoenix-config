@@ -4,7 +4,9 @@ class PartTypesTab extends SheetWrapper {
       sheetName: 'Типы деталей',
       numHeaders: 1,
       fields: [
-        'full_path',
+        'doc_create_time',
+        'doc_update_time',
+        'doc_path',
         'classname',
         'type',
         'subtype',
@@ -61,10 +63,10 @@ class PartTypesTab extends SheetWrapper {
         const content = { [field]: value };
 
         // получаем данные из таблицы, указывающие путь к документу
-        const { full_path } = super.getRowData(row);
+        const { doc_path } = super.getRowData(row);
     
         // update document in datapase
-        new Task(Tasks.UPDATE_DOC, { full_path, content });
+        new Task(Tasks.UPDATE_DOC, { doc_path, content });
       break;
     
       default:
@@ -113,7 +115,16 @@ class PartTypesTab extends SheetWrapper {
         Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
 
         // подготавливаем данные для записи в лист
-        const sheetData = data.map(items => items.fields);
+        const sheetData = data.documents.map(item => {
+          const {
+            createTime: doc_create_time,
+            updateTime: doc_update_time,
+            name: doc_path,
+            fields
+          } = item;
+
+          return { doc_create_time, doc_update_time, doc_path, ...fields };
+        });          
 
         super.updateSheet(sheetData);
         
@@ -123,8 +134,7 @@ class PartTypesTab extends SheetWrapper {
         Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
 
         // добавляем данные в лист
-        Logger.log('\n\nresponse: %s \n type: %s\n\n', data.fields, typeof(data.fields))
-        super.appendRow(data.fields);
+        super.appendRow(data.document.fields);
         
         return 'success';        
 

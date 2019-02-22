@@ -114,14 +114,14 @@ function onClickMenuItem_deleteItem() {
   }
 
   // извлекаем путь к документу, который нужно удалить
-  var full_path = rowData.full_path;
+  var doc_path = rowData.doc_path;
 
   // TODO:
   // - валидация пути надо?
 
-  if (!full_path) {
-    throw 'Нет full_path';
+  if (!doc_path) {
+    throw 'Нет doc_path';
   }
 
-  new Task(Tasks.DELETE_DOC, { full_path: full_path });
+  new Task(Tasks.DELETE_DOC, { doc_path: doc_path });
 };

@@ -319,8 +319,8 @@ var SheetWrapper = function () {
       if (!data instanceof Object) {
         return;
       }
-      var lastRowId = this.sheet.getLastRow();
-      return this.updateRow(lastRowId, data);
+      var nextRowId = this.sheet.getLastRow() + 1;
+      return this.updateRow(nextRowId, data);
     }
   }, {
     key: 'hide',

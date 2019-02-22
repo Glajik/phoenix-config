@@ -1,6 +1,6 @@
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -23,7 +23,7 @@ var PartTypesTab = function (_SheetWrapper) {
     var _this = _possibleConstructorReturn(this, (PartTypesTab.__proto__ || Object.getPrototypeOf(PartTypesTab)).call(this, {
       sheetName: 'Типы деталей',
       numHeaders: 1,
-      fields: ['full_path', 'classname', 'type', 'subtype', 'name', 'aliases']
+      fields: ['doc_create_time', 'doc_update_time', 'doc_path', 'classname', 'type', 'subtype', 'name', 'aliases']
     }));
 
     _this.coll_path = 'PartTypes';
@@ -85,12 +85,12 @@ var PartTypesTab = function (_SheetWrapper) {
           // получаем данные из таблицы, указывающие путь к документу
 
           var _get$call = _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'getRowData', this).call(this, row),
-              full_path = _get$call.full_path;
+              doc_path = _get$call.doc_path;
 
           // update document in datapase
 
 
-          new Task(Tasks.UPDATE_DOC, { full_path: full_path, content: content });
+          new Task(Tasks.UPDATE_DOC, { doc_path: doc_path, content: content });
           break;
 
         default:
@@ -142,8 +142,14 @@ var PartTypesTab = function (_SheetWrapper) {
           Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
 
           // подготавливаем данные для записи в лист
-          var sheetData = data.map(function (items) {
-            return items.fields;
+          var sheetData = data.documents.map(function (item) {
+            var doc_create_time = item.createTime,
+                doc_update_time = item.updateTime,
+                doc_path = item.name,
+                fields = item.fields;
+
+
+            return _extends({ doc_create_time: doc_create_time, doc_update_time: doc_update_time, doc_path: doc_path }, fields);
           });
 
           _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'updateSheet', this).call(this, sheetData);
@@ -154,8 +160,7 @@ var PartTypesTab = function (_SheetWrapper) {
           Logger.log('PartTypesTab.onEvent(%s, %s)', key, data);
 
           // добавляем данные в лист
-          Logger.log('\n\nresponse: %s \n type: %s\n\n', data.fields, _typeof(data.fields));
-          _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'appendRow', this).call(this, data.fields);
+          _get(PartTypesTab.prototype.__proto__ || Object.getPrototypeOf(PartTypesTab.prototype), 'appendRow', this).call(this, data.document.fields);
 
           return 'success';
 
